@@ -1,0 +1,11 @@
+<ui:UXML xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:ui="UnityEngine.UIElements" xmlns:uie="UnityEditor.UIElements" noNamespaceSchemaLocation="../../../../../../../UIElementsSchema/UIElements.xsd" editor-extension-mode="False">
+    <ui:Template name="CreateSession" src="project://database/Assets/Blocks/MultiplayerSession/UI/CreateSession.uxml?fileID=9197481963319205126&amp;guid=210ced8a9d3d01a4bbc0742844b43cc3&amp;type=3#CreateSession"/>
+    <ui:Template name="CurrentSession" src="project://database/Assets/Blocks/CommonSession/UI/CurrentSession.uxml?fileID=9197481963319205126&amp;guid=6a55f10912d74d3449f68f82c91df9d2&amp;type=3#CurrentSession"/>
+    <ui:Template name="JoinSessionByQuickJoin" src="project://database/Assets/Blocks/MultiplayerSession/UI/JoinSessionByQuickJoin.uxml?fileID=9197481963319205126&amp;guid=8d90af11efb27e942a4c9cc34f5d6162&amp;type=3#JoinSessionByQuickJoin"/>
+    <ui:VisualElement data-source="../../Settings/SessionSettings.asset?fileID=11400000&amp;guid=0bf4e1684added44da254017c7fc41b2&amp;type=2#SessionSettings" name="VisualElement" class="blocks-menu" style="max-width: none;">
+        <ui:Label text="Sessions" style="-unity-text-align: upper-center; -unity-font-style: bold; -unity-font-definition: resource(&quot;Fonts &amp; Materials/Ethnocentric-Regular&quot;); color: rgb(255, 255, 255); font-size: 21px;"/>
+        <ui:Instance template="CreateSession" style="height: auto; max-width: none;"/>
+        <ui:Instance template="JoinSessionByQuickJoin" class="blocks-container--stretch blocks-element--space-bottom" style="height: auto;"/>
+        <ui:Instance template="CurrentSession" class="blocks-container--stretch" style="height: auto; justify-content: center; align-content: center;"/>
+    </ui:VisualElement>
+</ui:UXML>

@@ -1,0 +1,5 @@
+<ui:UXML xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:ui="UnityEngine.UIElements" xmlns:uie="UnityEditor.UIElements" noNamespaceSchemaLocation="../../../../UIElementsSchema/UIElements.xsd" editor-extension-mode="False">
+    <ui:VisualElement style="flex-grow: 1; align-self: flex-end; align-content: flex-end; justify-content: center; align-items: flex-start;">
+        <ui:Toggle label="Ready" name="Toggle" style="background-color: rgb(0, 0, 0); color: rgb(255, 255, 255); font-size: 51px; justify-content: space-between; align-items: center; align-content: center; align-self: center; margin-right: 0; margin-left: 0; -unity-text-align: lower-left; padding-left: 5px; padding-right: 5px; padding-bottom: 5px; padding-top: 5px; -unity-font-definition: resource(&quot;Fonts &amp; Materials/Ethnocentric-Regular&quot;); width: auto; text-overflow: clip; margin-top: 0; margin-bottom: 0; right: 10px;"/>
+    </ui:VisualElement>
+</ui:UXML>
