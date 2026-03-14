@@ -5,7 +5,7 @@ using Unity.Services.Multiplayer;
 using UnityEngine;
 using UnityEngine.UIElements;
 
-namespace network
+namespace Network
 {
     public class SessionManager : MonoBehaviour
     {
