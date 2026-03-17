@@ -1,16 +1,13 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using Ships;
 using UnityEngine;
 using UnityEngine.InputSystem;
 
 public class ShipManager : MonoBehaviour
 {
-    [Header("Ship Prefabs")]
-    [SerializeField] private GameObject prefabTwo;
-    [SerializeField] private GameObject prefabThree;
-    [SerializeField] private GameObject prefabFour;
-    [SerializeField] private GameObject prefabFive;
+    [SerializeField] private LineShipView[] lineShipPrefabs;
 
     [Header("Ghost Materials")]
     [SerializeField] private Material ghostValid;
@@ -24,25 +21,17 @@ public class ShipManager : MonoBehaviour
         Five
     }
 
-    private enum Axis
-    {
-        X,
-        Y,
-        Z
-    }
+    // these store the smallest and biggest ship from ShipTypes
+    private const ShipTypes MinShip = ShipTypes.Two;
+    private const ShipTypes MaxShip = ShipTypes.Five;
 
-    // these just auto select the smallest and biggest ship from ShipTypes
-    private static readonly ShipTypes MinShip = Enum.GetValues(typeof(ShipTypes)).Cast<ShipTypes>().Min();
-    private static readonly ShipTypes MaxShip = Enum.GetValues(typeof(ShipTypes)).Cast<ShipTypes>().Max();
+    private ShipView _ghost;
 
     private ShipTypes _selectedShip; // the current "ghost" ship
     private bool _placing; // this is a config bool to toggle updating the ghost
     private SpaceBuilder _spaceBuilder;
-    private GameObject _ghost; // the transparent to-be-placed ship
-    private Renderer _ghostRenderer; // the ship's renderer - used to change ghost materials
-    private Axis _ghostAxis = Axis.X; // the long axis of the ship
     private Dictionary<ShipTypes, int> _shipRations; // currently defined in Start(), is the number of ships allowed
-    private Dictionary<ShipTypes, List<GameObject>> _shipObjects; // a list of all ship game objects to keep count
+    private Dictionary<ShipTypes, List<ShipView>> _shipObjects; // a list of all ship game objects to keep count
 
     // inputs
     private InputAction _placeShip;
@@ -79,10 +68,10 @@ public class ShipManager : MonoBehaviour
             [ShipTypes.Five] = 1
         };
         // init ship objects dict with null values
-        _shipObjects = new Dictionary<ShipTypes, List<GameObject>>();
+        _shipObjects = new Dictionary<ShipTypes, List<ShipView>>();
         foreach ((ShipTypes shipType, int count) in _shipRations)
         {
-            List<GameObject> objects = new(count);
+            List<ShipView> objects = new(count);
             for (int i = 0; i < count; i++)
             {
                 objects.Add(null);
@@ -116,18 +105,6 @@ public class ShipManager : MonoBehaviour
         _rotateShipLeft.performed -= _onRotateShip;
     }
 
-    private int SelectedLength()
-    {
-        return _selectedShip switch
-        {
-            ShipTypes.Two => 2,
-            ShipTypes.Three => 3,
-            ShipTypes.Four => 4,
-            ShipTypes.Five => 5,
-            _ => throw new ArgumentOutOfRangeException(),
-        };
-    }
-
     private int SelectedRemaining()
     {
         // returns the number of selected ships remaining
@@ -140,15 +117,7 @@ public class ShipManager : MonoBehaviour
     {
         // TODO - don't allow placing on top of another ship
         if (SelectedRemaining() <= 0) return false; // check if ship size available
-        Vector3 curPoint = _spaceBuilder.GetCursorLocation();
-        // define bounds
-        return _ghostAxis switch
-        {
-            Axis.X => !(curPoint.x + SelectedLength() > _spaceBuilder.GetSize()),
-            Axis.Z => curPoint.z - SelectedLength() >= -1,
-            Axis.Y => !(curPoint.y + SelectedLength() > _spaceBuilder.GetSize()),
-            _ => throw new ArgumentOutOfRangeException()
-        };
+        return _ghost.HasValidPlacement(_spaceBuilder.GetSize());
     }
 
     private Vector3 TransformedPoint()
@@ -166,31 +135,8 @@ public class ShipManager : MonoBehaviour
     {
         // alters the rotation axis
         if (!_ghost) return;
-        Axis axis = _ghostAxis switch
-        {
-            Axis.X => Axis.Z,
-            Axis.Z => Axis.Y,
-            Axis.Y => Axis.X,
-            _ => throw new ArgumentOutOfRangeException()
-        };
-        switch (axis)
-        {
-            case Axis.X:
-                _ghost.transform.Rotate(Vector3.forward, 270);
-                break;
-            case Axis.Z:
-                _ghost.transform.Rotate(Vector3.up, 90);
-                break;
-            case Axis.Y:
-                _ghost.transform.Rotate(Vector3.up, 270); // undoes Z
-                _ghost.transform.Rotate(Vector3.forward, 90);
-                break;
-            default:
-                throw new ArgumentOutOfRangeException();
-        }
-
-        _ghostAxis = axis;
-        _ghostRenderer.material = GetMaterial();
+        _ghost.Rotate();
+        _ghost.SetMaterial(GetMaterial());
     }
 
     private void CycleShip()
@@ -209,26 +155,26 @@ public class ShipManager : MonoBehaviour
         Vector3 newPos = _ghost ? _ghost.transform.position : TransformedPoint();
         Quaternion newRot = _ghost ? _ghost.transform.rotation : Quaternion.identity;
 
-        if (_ghost) Destroy(_ghost);
-        if (_ghostRenderer) Destroy(_ghostRenderer);
+        AxisObject savedAxes =_ghost ? _ghost.GetAxes() : Axes.X;
+        
+        if (_ghost) Destroy(_ghost.gameObject);
         
         // remakes ghost with the transform info & parents to self
         _ghost = Instantiate(ObjectFromSelected(), newPos, newRot, transform);
-        _ghostRenderer = _ghost.GetComponentInChildren<Renderer>();
-        _ghostRenderer.material = GetMaterial();
+        _ghost.SetAxes(savedAxes);
+        _ghost.MoveShip(newPos, _spaceBuilder.GetCursorLocation());
+        _ghost.SetMaterial(GetMaterial());
     }
 
     private void HandleCursorMoved()
     {
         if (!_placing) return;
 
-        Vector3 worldPos = TransformedPoint();
-
         if (_ghost)
         {
             // ghost exists, just update pos and material
-            _ghost.transform.position = worldPos;
-            _ghostRenderer.material = GhostValid() ? ghostValid : ghostInvalid;
+            _ghost.MoveShip(TransformedPoint(), _spaceBuilder.GetCursorLocation());
+            _ghost.SetMaterial(GetMaterial());
         }
         else
         {
@@ -257,22 +203,9 @@ public class ShipManager : MonoBehaviour
         HandleCursorMoved(); // checks if out of ships
     }
 
-    private GameObject ObjectFromType(ShipTypes type)
-    {
-        // returns prefab from ShipType
-        return type switch
-        {
-            ShipTypes.Two => prefabTwo,
-            ShipTypes.Three => prefabThree,
-            ShipTypes.Four => prefabFour,
-            ShipTypes.Five => prefabFive,
-            _ => prefabTwo
-        };
-    }
-
-    private GameObject ObjectFromSelected()
+    private ShipView ObjectFromSelected()
     {
         // Above function but does selected ship
-        return ObjectFromType(_selectedShip);
+        return lineShipPrefabs[(int)_selectedShip];
     }
 }
