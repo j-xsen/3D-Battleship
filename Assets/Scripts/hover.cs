@@ -13,7 +13,7 @@ public class hover : MonoBehaviour
     void Awake()
     {
         current = this;
-        Debug.Log("Hover Awake called: current set to " + current);
+      //  Debug.Log("Hover Awake called: current set to " + current);
     }
     public event Action<int, int, int> Pos;
     public void Recpos(GameObject rec)

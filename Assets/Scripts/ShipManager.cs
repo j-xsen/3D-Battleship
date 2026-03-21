@@ -1,4 +1,5 @@
 using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using Ships;
@@ -57,10 +58,11 @@ public class ShipManager : MonoBehaviour
 
     //for setting collision detections
     private Vector3 bcollider;
+    private Vector3 ccollider;
     //check how many total are left
     private int _shipcount = 0;
     //prevent overlap
-    private LayerMask overlap;
+    public LayerMask overlap;
 
     private void Start()
     {
@@ -85,9 +87,9 @@ public class ShipManager : MonoBehaviour
         // maximum number
         _shipRations = new Dictionary<ShipTypes, int>
         {
-            [ShipTypes.Two] = 1,
-            [ShipTypes.Three] = 1,
-            [ShipTypes.Four] = 1,
+            [ShipTypes.Two] = 4,
+            [ShipTypes.Three] = 3,
+            [ShipTypes.Four] = 2,
             [ShipTypes.Five] = 1
         };
 
@@ -251,12 +253,20 @@ public class ShipManager : MonoBehaviour
             ReinstantiateGhost();
         }
     }
+    private bool free = true;
     private void Update()
     {
-        if (Mouse.current.rightButton.isPressed)
+        if ((Mouse.current.rightButton.isPressed) & (free))
         {
             RotateShip();
+            free = false;
+            StartCoroutine(Delay(0.5f));
         }
+    }
+    IEnumerator Delay(float wait)
+    {
+        yield return new WaitForSeconds(wait);
+        free = true;
     }
     private void PlaceShip()
     {
@@ -268,27 +278,40 @@ public class ShipManager : MonoBehaviour
         if (SelectedRemaining() == 0) return; // check if ship available.
                                               //  Debug.Log("Not Enough");
         int len = _ghost.GetComponent<LineShipView>().shipLength;
-        if ( _ghost.transform.rotation.y == 90)
+        ccollider = _ghost.transform.position;
+
+        //determine the direction for the collider check
+        if ( _ghost.transform.rotation.eulerAngles.y == 90)
         {
             bcollider = new Vector3(1, 1, len);
+            ccollider.z = ccollider.z + (float)((len - 1) * .5);
+          //  Debug.Log("up " + _ghost.transform.rotation.eulerAngles.y);
         }
-        else if ( _ghost.transform.rotation.z == 90)
+        else if ( _ghost.transform.rotation.eulerAngles.z == 90)
         {
             bcollider = new Vector3(1, len, 1);
+            ccollider.y = ccollider.y + (float)((len - 1) * .5);
+           // Debug.Log("right" + _ghost.transform.rotation.eulerAngles.z);
         }
         else
         {
             bcollider = new Vector3(len, 1, 1);
+            ccollider.x = ccollider.x + (float)((len - 1) * .5);
+           // Debug.Log("normal z: " + _ghost.transform.rotation.eulerAngles.z + " y: " + _ghost.transform.rotation.eulerAngles.y);
         }
-        Collider[] hit = Physics.OverlapBox(_ghost.transform.position, bcollider, Quaternion.identity, overlap);
-        //if there are colliders of ships already there, abort
-        for (int i = 0; i < hit.Length; i++) 
+
+        //the overlap box needs to have dimensions half that of the original, or it will be too large
+        Vector3 correct = bcollider / 3;
+        Collider[] hit = Physics.OverlapBox(ccollider, correct, Quaternion.identity, overlap);
+        foreach (Collider found in hit)
         {
-            if (hit[i].CompareTag("Ship"))
-            {
-                Debug.Log("Ship already here");
-                return;
-            }
+            Debug.Log("colliders: " + found);
+        }
+
+        //if there are colliders of ships already there, abort
+        if (hit.Length > 0)
+        {
+            return;
         }
         
             // get the dict of ship objects for the selected ship
@@ -300,6 +323,8 @@ public class ShipManager : MonoBehaviour
                     _ghost.transform.position,
                     _ghost.transform.rotation,
                     transform);
+        //Debug.Log("index 2: " + (_shipRations[_selectedShip] - SelectedRemaining()));
+        _shipObjects[_selectedShip][(_shipRations[_selectedShip] - SelectedRemaining())-1].gameObject.transform.GetChild(0).gameObject.layer = LayerMask.NameToLayer("Ship");
 
         //update UI
         texts[(int)_selectedShip].text = SelectedRemaining() + "";
@@ -319,6 +344,6 @@ public class ShipManager : MonoBehaviour
         // Check that it is being run in Play Mode, so it doesn't try to draw this in Editor mode
         if (Application.isPlaying)
             // Draw a cube where the OverlapBox is (positioned where your GameObject is as well as a size)
-            Gizmos.DrawWireCube(_ghost.transform.position, bcollider);
+            Gizmos.DrawWireCube(ccollider, bcollider);
     }
 }
