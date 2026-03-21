@@ -1,4 +1,5 @@
 using System;
+using System.ComponentModel;
 using UnityEngine;
 using UnityEngine.InputSystem;
 
@@ -30,9 +31,11 @@ public class SpaceBuilder : MonoBehaviour
     private Action<InputAction.CallbackContext> _rightCtx;
     private Action<InputAction.CallbackContext> _forwardCtx;
     private Action<InputAction.CallbackContext> _backCtx;
-    
+    private int row = 0;
+
 
     private Vector3 _origin;
+  //  private hover hovers;
 
     public Vector3 GetCursorLocation()
     {
@@ -46,6 +49,15 @@ public class SpaceBuilder : MonoBehaviour
     
     private void Start()
     {
+        //    hovers = GetComponent<hover>();
+        if (hover.current != null)
+        {
+            hover.current.Pos += UpdateSelectedMos;
+        }
+        else
+        {
+            Debug.LogWarning("hover.current is null. Make sure the hover script has been initialized first.");
+        }
         // input listeners
         _selectUp = InputSystem.actions.FindAction("SelectUp");
         _selectDown = InputSystem.actions.FindAction("SelectDown");
@@ -86,13 +98,72 @@ public class SpaceBuilder : MonoBehaviour
         _selectLeft.performed -= _leftCtx;
         _selectForward.performed -= _forwardCtx;
         _selectBack.performed -= _backCtx;
+        hover.current.Pos -= UpdateSelected;
     }
 
     private void Update()
     {
+        if (Mouse.current.scroll.ReadValue().y < 0)
+        {
+            MoveRow(true);
+        }
+        else if(Mouse.current.scroll.ReadValue().y > 0)
+        {
+            MoveRow(false);
+        }
         // these are in update so you can hold them
         if (_rotateMapLeft.IsPressed()) transform.RotateAround(_origin, Vector3.up, 2f);
         if (_rotateMapRight.IsPressed()) transform.RotateAround(_origin, Vector3.up, -2f);
+    }
+    private void MoveRow(bool further)
+    {
+        if ((further) & (row < size))
+        {
+            for (int i = 0; i < size; i++)
+            {
+                for(int j = 0; j < size; j++)
+                {
+                    _renderers[i,j,row].GetComponent<BoxCollider>().enabled = false;
+                }
+            }
+            row = row + 1;
+        }
+        else if (row != 0) 
+        {
+            if (!further)
+            {
+                for (int i = 0; i < size; i++)
+                {
+                    for (int j = 0; j < size; j++)
+                    {
+                        _renderers[i, j, row].GetComponent<BoxCollider>().enabled = true;
+                    }
+                }
+            }
+            row = row - 1;
+        }
+    }
+
+    private void UpdateSelectedMos(int x, int y, int z)
+    {
+        // validate
+        // TODO: notify of error?
+        int newX = x;
+        int newY = y;
+        int newZ = z;
+
+        if (0 > newX || 0 > newY || 0 > newZ) return;
+        if (size <= newX || size <= newY || size <= newZ) return;
+
+        if (showCursor) _renderers[_selectedX, _selectedY, _selectedZ].material = defaultMat;
+
+        _selectedX = newX;
+        _selectedY = newY;
+        _selectedZ = newZ;
+
+        if (showCursor) _renderers[_selectedX, _selectedY, _selectedZ].material = selectMat;
+        // this alerts all the listeners
+        OnCursorMoved?.Invoke();
     }
 
     private void UpdateSelected(int x, int y, int z)

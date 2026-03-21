@@ -2,7 +2,10 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using Ships;
+using TMPro;
+using Unity.VisualScripting;
 using UnityEngine;
+using UnityEngine.UI;
 using UnityEngine.InputSystem;
 
 public class ShipManager : MonoBehaviour
@@ -12,6 +15,13 @@ public class ShipManager : MonoBehaviour
     [Header("Ghost Materials")]
     [SerializeField] private Material ghostValid;
     [SerializeField] private Material ghostInvalid;
+
+    [SerializeField] private Button buttonOne;
+    [SerializeField] private Button buttonTwo;
+    [SerializeField] private Button buttonThree;
+    [SerializeField] private Button buttonFour;
+
+    private TMP_Text[] texts;
 
     private enum ShipTypes
     {
@@ -33,6 +43,8 @@ public class ShipManager : MonoBehaviour
     private Dictionary<ShipTypes, int> _shipRations; // currently defined in Start(), is the number of ships allowed
     private Dictionary<ShipTypes, List<ShipView>> _shipObjects; // a list of all ship game objects to keep count
 
+
+
     // inputs
     private InputAction _placeShip;
     private Action<InputAction.CallbackContext> _onPlaceShip;
@@ -42,8 +54,19 @@ public class ShipManager : MonoBehaviour
     private Action<InputAction.CallbackContext> _onRotateShip;
     private InputAction _rotateShipLeft;
 
+
+    //for setting collision detections
+    private Vector3 bcollider;
+    //check how many total are left
+    private int _shipcount = 0;
+    //prevent overlap
+    private LayerMask overlap;
+
     private void Start()
     {
+        hover.current.Clicked += PlaceShip;
+
+        texts = new TMP_Text[] { buttonOne.gameObject.GetComponentInChildren<TMP_Text>(), buttonTwo.gameObject.GetComponentInChildren<TMP_Text>(), buttonThree.gameObject.GetComponentInChildren<TMP_Text>(), buttonFour.gameObject.GetComponentInChildren<TMP_Text>() };
         // input setup
         _placeShip = InputSystem.actions.FindAction("SpaceField/ShipPlace");
         _onPlaceShip = _ => PlaceShip();
@@ -58,7 +81,7 @@ public class ShipManager : MonoBehaviour
         _rotateShipLeft.performed += _onRotateShip;
 
         // TODO: Get game settings from server?
-        
+
         // maximum number
         _shipRations = new Dictionary<ShipTypes, int>
         {
@@ -67,6 +90,14 @@ public class ShipManager : MonoBehaviour
             [ShipTypes.Four] = 1,
             [ShipTypes.Five] = 1
         };
+
+        //set up starting UI with number of available ships
+        texts[0].text = (_shipRations[ShipTypes.Two]) + "";
+        texts[1].text = (_shipRations[ShipTypes.Three]) + "";
+        texts[2].text = (_shipRations[ShipTypes.Four]) + "";
+        texts[3].text = (_shipRations[ShipTypes.Five]) + "";
+
+
         // init ship objects dict with null values
         _shipObjects = new Dictionary<ShipTypes, List<ShipView>>();
         foreach ((ShipTypes shipType, int count) in _shipRations)
@@ -75,10 +106,11 @@ public class ShipManager : MonoBehaviour
             for (int i = 0; i < count; i++)
             {
                 objects.Add(null);
+                _shipcount = _shipcount + 1;
             }
-
             _shipObjects[shipType] = objects;
         }
+        Debug.Log("shipcount: " + _shipcount);
 
         _placing = true; // config
         _selectedShip = ShipTypes.Two; // defaults ghost ship to the two wide ship
@@ -93,6 +125,13 @@ public class ShipManager : MonoBehaviour
 
         _spaceBuilder.OnCursorMoved += HandleCursorMoved; // gets called every time the cursor moves
         HandleCursorMoved(); // creates ghost on start
+
+        //set up UI Buttons to have listeners
+        buttonOne.onClick.AddListener(() => ChosenShip(0));
+        buttonTwo.onClick.AddListener(() => ChosenShip(1));
+        buttonThree.onClick.AddListener(() => ChosenShip(2));
+        buttonFour.onClick.AddListener(() => ChosenShip(3));
+
     }
 
     private void OnDestroy()
@@ -103,6 +142,8 @@ public class ShipManager : MonoBehaviour
         _cycleShip.performed -= _onCycleShip;
         _rotateShipRight.performed -= _onRotateShip;
         _rotateShipLeft.performed -= _onRotateShip;
+        hover.current.Clicked -= PlaceShip;
+
     }
 
     private int SelectedRemaining()
@@ -139,6 +180,34 @@ public class ShipManager : MonoBehaviour
         _ghost.SetMaterial(GetMaterial());
     }
 
+    private void ChosenShip(int clicked)
+    {
+        switch (clicked)
+        {
+            case 0:
+                {
+                    _selectedShip = ShipTypes.Two;
+                    break;
+                }
+            case 1:
+                {
+                    _selectedShip = ShipTypes.Three;
+                    break;
+                }
+            case 2:
+                {
+                    _selectedShip = ShipTypes.Four;
+                    break;
+                }
+            case 3:
+                {
+                    _selectedShip = ShipTypes.Five;
+                    break;
+                }
+        }
+        ReinstantiateGhost();
+    }
+
     private void CycleShip()
     {
         // called to cycle through ship types
@@ -150,15 +219,15 @@ public class ShipManager : MonoBehaviour
     private void ReinstantiateGhost()
     {
         // destroys the ghost object and recreates it
-        
+
         // saves transform info of ghost
         Vector3 newPos = _ghost ? _ghost.transform.position : TransformedPoint();
         Quaternion newRot = _ghost ? _ghost.transform.rotation : Quaternion.identity;
 
-        AxisObject savedAxes =_ghost ? _ghost.GetAxes() : Axes.X;
-        
+        AxisObject savedAxes = _ghost ? _ghost.GetAxes() : Axes.X;
+
         if (_ghost) Destroy(_ghost.gameObject);
-        
+
         // remakes ghost with the transform info & parents to self
         _ghost = Instantiate(ObjectFromSelected(), newPos, newRot, transform);
         _ghost.SetAxes(savedAxes);
@@ -182,23 +251,58 @@ public class ShipManager : MonoBehaviour
             ReinstantiateGhost();
         }
     }
-
+    private void Update()
+    {
+        if (Mouse.current.rightButton.isPressed)
+        {
+            RotateShip();
+        }
+    }
     private void PlaceShip()
     {
         // places a ship where the ghost ship is
-        
+
         if (!GhostValid()) return; // ghost ship required
+       // Debug.Log("Valid");
 
         if (SelectedRemaining() == 0) return; // check if ship available.
+                                              //  Debug.Log("Not Enough");
+        int len = _ghost.GetComponent<LineShipView>().shipLength;
+        if ( _ghost.transform.rotation.y == 90)
+        {
+            bcollider = new Vector3(1, 1, len);
+        }
+        else if ( _ghost.transform.rotation.z == 90)
+        {
+            bcollider = new Vector3(1, len, 1);
+        }
+        else
+        {
+            bcollider = new Vector3(len, 1, 1);
+        }
+        Collider[] hit = Physics.OverlapBox(_ghost.transform.position, bcollider, Quaternion.identity, overlap);
+        //if there are colliders of ships already there, abort
+        for (int i = 0; i < hit.Length; i++) 
+        {
+            if (hit[i].CompareTag("Ship"))
+            {
+                Debug.Log("Ship already here");
+                return;
+            }
+        }
+        
+            // get the dict of ship objects for the selected ship
+            // then get the index of the maximum ship ration - remaining amount
+            // then set that to a prefab placed at the ghost's location
 
-        // get the dict of ship objects for the selected ship
-        // then get the index of the maximum ship ration - remaining amount
-        // then set that to a prefab placed at the ghost's location
-        _shipObjects[_selectedShip][_shipRations[_selectedShip]-SelectedRemaining()] =
-            Instantiate(ObjectFromSelected(),
-                _ghost.transform.position,
-                _ghost.transform.rotation,
-                transform);
+            _shipObjects[_selectedShip][_shipRations[_selectedShip] - SelectedRemaining()] =
+                Instantiate(ObjectFromSelected(),
+                    _ghost.transform.position,
+                    _ghost.transform.rotation,
+                    transform);
+
+        //update UI
+        texts[(int)_selectedShip].text = SelectedRemaining() + "";
 
         HandleCursorMoved(); // checks if out of ships
     }
@@ -207,5 +311,14 @@ public class ShipManager : MonoBehaviour
     {
         // Above function but does selected ship
         return lineShipPrefabs[(int)_selectedShip];
+    }
+    
+    void OnDrawGizmos()
+    {
+        Gizmos.color = Color.red;
+        // Check that it is being run in Play Mode, so it doesn't try to draw this in Editor mode
+        if (Application.isPlaying)
+            // Draw a cube where the OverlapBox is (positioned where your GameObject is as well as a size)
+            Gizmos.DrawWireCube(_ghost.transform.position, bcollider);
     }
 }
