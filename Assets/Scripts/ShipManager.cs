@@ -1,13 +1,15 @@
+using Ships;
 using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
-using Ships;
+using System.Runtime.CompilerServices;
 using TMPro;
 using Unity.VisualScripting;
 using UnityEngine;
-using UnityEngine.UI;
+using UnityEngine.EventSystems;
 using UnityEngine.InputSystem;
+using UnityEngine.UI;
 
 public class ShipManager : MonoBehaviour
 {
@@ -16,14 +18,15 @@ public class ShipManager : MonoBehaviour
     [Header("Ghost Materials")]
     [SerializeField] private Material ghostValid;
     [SerializeField] private Material ghostInvalid;
-
+    [Header("buttons")]
     [SerializeField] private Button buttonOne;
     [SerializeField] private Button buttonTwo;
     [SerializeField] private Button buttonThree;
     [SerializeField] private Button buttonFour;
+    [Header("cam")]
+    [SerializeField] private GameObject cam;
 
     private TMP_Text[] texts;
-
     private enum ShipTypes
     {
         Two,
@@ -63,11 +66,12 @@ public class ShipManager : MonoBehaviour
     private int _shipcount = 0;
     //prevent overlap
     public LayerMask overlap;
-
+    //making a number to add onto names
+    private int _index = 0;
     private void Start()
     {
         hover.current.Clicked += PlaceShip;
-
+        hover.current.Shipclick += Redo;
         texts = new TMP_Text[] { buttonOne.gameObject.GetComponentInChildren<TMP_Text>(), buttonTwo.gameObject.GetComponentInChildren<TMP_Text>(), buttonThree.gameObject.GetComponentInChildren<TMP_Text>(), buttonFour.gameObject.GetComponentInChildren<TMP_Text>() };
         // input setup
         _placeShip = InputSystem.actions.FindAction("SpaceField/ShipPlace");
@@ -129,13 +133,53 @@ public class ShipManager : MonoBehaviour
         HandleCursorMoved(); // creates ghost on start
 
         //set up UI Buttons to have listeners
-        buttonOne.onClick.AddListener(() => ChosenShip(0));
-        buttonTwo.onClick.AddListener(() => ChosenShip(1));
-        buttonThree.onClick.AddListener(() => ChosenShip(2));
-        buttonFour.onClick.AddListener(() => ChosenShip(3));
+        buttonOne.onClick.AddListener(() =>
+        {
+            ChosenShip(0);
+            ReinstantiateGhost();
+        });
+        buttonTwo.onClick.AddListener(() =>
+        {
+            ChosenShip(1);
+            ReinstantiateGhost();
+        });
+        buttonThree.onClick.AddListener(() =>
+        {
+            ChosenShip(2);
+            ReinstantiateGhost();
+        });
+        buttonFour.onClick.AddListener(() =>
+        {
+            ChosenShip(3);
+            ReinstantiateGhost();
+        });
 
     }
 
+
+    private void Redo(GameObject Ship)
+    {
+        //Debug.Log("got this far");
+        ChosenShip(Ship.GetComponent<LineShipView>().shipLength - 2);
+        //Debug.Log(_shipObjects[_selectedShip]);
+        //_shipObjects[_selectedShip].RemoveAt(Ship.GetComponent<LineShipView>().index);
+        for (int i = 0; i < _shipObjects[_selectedShip].Count; i++)
+        {
+            /*
+            Debug.Log("found ship name: " + Ship.name);
+            Debug.Log("listed ship name: " + _shipObjects[_selectedShip][i].gameObject.name);
+            */
+            if (_shipObjects[_selectedShip][i].gameObject.name == Ship.name)
+            {
+                _shipObjects[_selectedShip].RemoveAt(i);
+                Destroy(Ship);
+                texts[(int)_selectedShip].text = SelectedRemaining() + "";
+                return;
+            }
+            //Debug.Log(_shipObjects[_selectedShip]);
+        }
+        Debug.Log("couldn't find ship");
+    }
     private void OnDestroy()
     {
         // unload input function
@@ -145,7 +189,7 @@ public class ShipManager : MonoBehaviour
         _rotateShipRight.performed -= _onRotateShip;
         _rotateShipLeft.performed -= _onRotateShip;
         hover.current.Clicked -= PlaceShip;
-
+        hover.current.Shipclick -= Redo;
     }
 
     private int SelectedRemaining()
@@ -153,6 +197,14 @@ public class ShipManager : MonoBehaviour
         // returns the number of selected ships remaining
         int startingRation = _shipRations[_selectedShip];
         int numberPlaced = _shipObjects[_selectedShip].Count(ship => ship);
+        if (startingRation - numberPlaced == 0)
+        {
+            texts[(int)_selectedShip].gameObject.transform.parent.GetComponent<Button>().interactable = false;
+        }
+        else
+        {
+            texts[(int)_selectedShip].gameObject.transform.parent.GetComponent<Button>().interactable = true;
+        }
         return startingRation - numberPlaced;
     }
 
@@ -207,7 +259,7 @@ public class ShipManager : MonoBehaviour
                     break;
                 }
         }
-        ReinstantiateGhost();
+        //ReinstantiateGhost();
     }
 
     private void CycleShip()
@@ -262,6 +314,30 @@ public class ShipManager : MonoBehaviour
             free = false;
             StartCoroutine(Delay(0.5f));
         }
+        if (Mouse.current.scroll.ReadValue().y != 0)
+        {
+            ReinstantiateGhost();
+        }
+
+    }
+
+
+    public void ChangeMode()
+    {
+        PhysicsRaycaster mode = cam.GetComponent<PhysicsRaycaster>();
+        //check if default layer is active
+        if ((mode.eventMask & (1 << 0)) != 0)
+        {
+            //set all layers to mask
+            mode.eventMask = ~0 & ~(LayerMask.GetMask("Default")) & ~(LayerMask.GetMask("Blocked"));
+            _ghost.GetComponentInChildren<MeshRenderer>().enabled = false;
+            HandleCursorMoved();
+        }
+        else
+        {
+            mode.eventMask = ~0 & ~(LayerMask.GetMask("Ship")) & ~(LayerMask.GetMask("Blocked"));
+            _ghost.GetComponentInChildren<MeshRenderer>().enabled = true;
+        }
     }
     IEnumerator Delay(float wait)
     {
@@ -313,18 +389,38 @@ public class ShipManager : MonoBehaviour
         {
             return;
         }
-        
+
+        if (_shipRations[_selectedShip] - SelectedRemaining() >= _shipObjects[_selectedShip].Count)
+        {
+            _shipObjects[_selectedShip].Add(
+              Instantiate(ObjectFromSelected(),
+                  _ghost.transform.position,
+                  _ghost.transform.rotation,
+                  transform));
+        }
+        else
+        {
             // get the dict of ship objects for the selected ship
             // then get the index of the maximum ship ration - remaining amount
             // then set that to a prefab placed at the ghost's location
-
+            Debug.Log((_shipRations[_selectedShip] - SelectedRemaining()));
             _shipObjects[_selectedShip][_shipRations[_selectedShip] - SelectedRemaining()] =
                 Instantiate(ObjectFromSelected(),
                     _ghost.transform.position,
                     _ghost.transform.rotation,
                     transform);
+        }
         //Debug.Log("index 2: " + (_shipRations[_selectedShip] - SelectedRemaining()));
-        _shipObjects[_selectedShip][(_shipRations[_selectedShip] - SelectedRemaining())-1].gameObject.transform.GetChild(0).gameObject.layer = LayerMask.NameToLayer("Ship");
+        Debug.Log("number placed: " + ((_shipRations[_selectedShip] - SelectedRemaining()) - 1));
+        GameObject collider_object = _shipObjects[_selectedShip][(_shipRations[_selectedShip] - SelectedRemaining()) - 1].gameObject;
+        collider_object.layer = LayerMask.NameToLayer("Ship");
+        collider_object.transform.GetChild(0).gameObject.layer = LayerMask.NameToLayer("Ship");
+        collider_object.name = collider_object.name + " " + _index;
+        _index = _index + 1;
+      //  Debug.Log("listed ship name: " + _shipObjects[_selectedShip][(_shipRations[_selectedShip] - SelectedRemaining()) - 1].gameObject.name);
+
+
+        //  _shipObjects[_selectedShip][(_shipRations[_selectedShip] - SelectedRemaining()) - 1].gameObject.GetComponent<LineShipView>().index = (_shipRations[_selectedShip] - SelectedRemaining()) - 1;
 
         //update UI
         texts[(int)_selectedShip].text = SelectedRemaining() + "";

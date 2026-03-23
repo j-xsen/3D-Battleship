@@ -32,6 +32,14 @@ public class hover : MonoBehaviour
         }
     }
 
+    public event Action<GameObject> Shipclick;
+    public void ReShip(GameObject gameObject)
+    {
+        if (Shipclick != null)
+        {
+            Shipclick?.Invoke(gameObject);
+        }
+    }
     // Update is called once per frame
     void Update()
     {

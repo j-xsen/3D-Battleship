@@ -11,7 +11,7 @@ public class PauseSystem : MonoBehaviour
     void Start()
     {
         continueButton.onClick.AddListener(() => gameObject.SetActive(false));
-        menuButton.onClick.AddListener(() => SceneManager.LoadScene("Main Menu"));
+        menuButton.onClick.AddListener(() => SceneManager.LoadScene("Main Menu_network"));
         quitButton.onClick.AddListener(() => Application.Quit());
     }
 }

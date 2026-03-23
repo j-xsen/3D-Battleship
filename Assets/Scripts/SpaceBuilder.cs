@@ -2,6 +2,10 @@ using System;
 using System.ComponentModel;
 using UnityEngine;
 using UnityEngine.InputSystem;
+using UnityEngine.Rendering.Universal;
+using UnityEngine.UI;
+using TMPro;
+using UnityEngine.EventSystems;
 
 public class SpaceBuilder : MonoBehaviour
 {
@@ -85,7 +89,6 @@ public class SpaceBuilder : MonoBehaviour
         // make an array of renderers so we don't keep calling GetComponent
         _renderers = new Renderer[size, size, size];
         GenerateField();
-        
         // init to 0,0,0
         UpdateSelected(0,0,0);
     }
@@ -117,30 +120,38 @@ public class SpaceBuilder : MonoBehaviour
     }
     private void MoveRow(bool further)
     {
-        if ((further) & (row < size))
+        if ((further) & (row < (size -1)))
         {
             for (int i = 0; i < size; i++)
             {
-                for(int j = 0; j < size; j++)
+                for (int j = 0; j < size; j++)
                 {
-                    _renderers[i,j,row].GetComponent<BoxCollider>().enabled = false;
+                    //_renderers[i, j, row].GetComponent<BoxCollider>().enabled = false;
+                    _renderers[i,j,row].gameObject.layer = LayerMask.NameToLayer("Blocked");
                 }
             }
-            row = row + 1;
-        }
-        else if (row != 0) 
-        {
-            if (!further)
+            if (row != (size - 1))
             {
-                for (int i = 0; i < size; i++)
+                row = row + 1;
+ //               Debug.Log(row);
+            }
+        }
+        else if ((!further) & (row >= 0))
+        {
+
+            for (int i = 0; i < size; i++)
+            {
+                for (int j = 0; j < size; j++)
                 {
-                    for (int j = 0; j < size; j++)
-                    {
-                        _renderers[i, j, row].GetComponent<BoxCollider>().enabled = true;
-                    }
+                    //_renderers[i, j, row].GetComponent<BoxCollider>().enabled = true;
+                    _renderers[i, j, row].gameObject.layer = LayerMask.NameToLayer("Default");
                 }
             }
-            row = row - 1;
+            if (row != 0)
+            {
+                row = row - 1;
+  //              Debug.Log(row);
+            }
         }
     }
 
@@ -184,9 +195,11 @@ public class SpaceBuilder : MonoBehaviour
         _selectedZ = newZ;
 
         if (showCursor) _renderers[_selectedX, _selectedY, _selectedZ].material = selectMat;
+
         // this alerts all the listeners
         OnCursorMoved?.Invoke();
     }
+
 
     private void GenerateField()
     {

@@ -17,6 +17,7 @@ public class selection : MonoBehaviour
     void Start()
     {
         origin = new Vector3(4, (float)3.5, (float)3.5);
+        gameObject.transform.position = new Vector3(4, (float)3.5, -9);
     }
 
 

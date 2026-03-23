@@ -10,6 +10,7 @@ GameObject:
   m_Component:
   - component: {fileID: 2943455677102009494}
   - component: {fileID: 5259067707087747510}
+  - component: {fileID: 1736767003868886907}
   m_Layer: 0
   m_Name: ship4
   m_TagString: Untagged
@@ -46,6 +47,19 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Ships.LineShipView
   shipLength: 4
+  shipHealth: 0
+--- !u!114 &1736767003868886907
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 5484030654705954970}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 91b6429475ba2d14caf5c883c1e961ee, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::hovercube
 --- !u!1 &5993995999074190645
 GameObject:
   m_ObjectHideFlags: 0
@@ -58,7 +72,7 @@ GameObject:
   - component: {fileID: 3034296219710624654}
   - component: {fileID: 1049115267160263982}
   - component: {fileID: 8533544676677820425}
-  m_Layer: 0
+  m_Layer: 6
   m_Name: child4
   m_TagString: Ship
   m_Icon: {fileID: 0}
