@@ -156,7 +156,7 @@ public class ShipManager : MonoBehaviour
 
     }
 
-    public void Protect()
+   /* public void Protect()
     {
         for (int i = 0; i < _shipObjects.Count; i++)
         {
@@ -167,7 +167,7 @@ public class ShipManager : MonoBehaviour
                 DontDestroyOnLoad(ship);
             }
         }
-    }
+    }*/
 
     private void Redo(GameObject Ship)
     {

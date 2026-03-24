@@ -53,6 +53,7 @@ public class SpaceBuilder : MonoBehaviour
     
     private void Start()
     {
+        DontDestroyOnLoad(this);
         //    hovers = GetComponent<hover>();
         if (hover.current != null)
         {
@@ -95,12 +96,12 @@ public class SpaceBuilder : MonoBehaviour
 
     private void OnDestroy()
     {
-        _selectUp.performed -= _upCtx;
-        _selectDown.performed -= _downCtx;
-        _selectRight.performed -= _rightCtx;
-        _selectLeft.performed -= _leftCtx;
-        _selectForward.performed -= _forwardCtx;
-        _selectBack.performed -= _backCtx;
+        if (_selectUp != null) _selectUp.performed -= _upCtx;
+        if (_selectDown != null) _selectDown.performed -= _downCtx;
+        if (_selectRight != null) _selectRight.performed -= _rightCtx;
+        if (_selectLeft != null) _selectLeft.performed -= _leftCtx;
+        if (_selectForward != null) _selectForward.performed -= _forwardCtx;
+        if (_selectBack != null) _selectBack.performed -= _backCtx;
         hover.current.Pos -= UpdateSelected;
     }
 
@@ -211,6 +212,8 @@ public class SpaceBuilder : MonoBehaviour
                 for (int z = 0; z < size; z++)
                 {
                     GameObject newSpace = Instantiate(spacePrefab, new Vector3(x,y,z), Quaternion.identity, this.transform);
+                    //newSpace.transform.parent = null;
+                    //DontDestroyOnLoad(newSpace);
                     newSpace.name = string.Concat(x, y, z);
                     _renderers[x, y, z] = newSpace.GetComponent<Renderer>();
                 }

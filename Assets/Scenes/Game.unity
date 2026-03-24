@@ -10432,7 +10432,7 @@ GameObject:
   - component: {fileID: 412167433}
   m_Layer: 0
   m_Name: SpaceBuilder
-  m_TagString: Untagged
+  m_TagString: Builder
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
