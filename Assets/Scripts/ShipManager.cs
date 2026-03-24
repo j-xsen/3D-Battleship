@@ -156,6 +156,18 @@ public class ShipManager : MonoBehaviour
 
     }
 
+    public void Protect()
+    {
+        for (int i = 0; i < _shipObjects.Count; i++)
+        {
+            ChosenShip(i);
+            foreach (var ship in _shipObjects[_selectedShip])
+            {
+                ship.transform.parent = null;
+                DontDestroyOnLoad(ship);
+            }
+        }
+    }
 
     private void Redo(GameObject Ship)
     {
@@ -184,10 +196,10 @@ public class ShipManager : MonoBehaviour
     {
         // unload input function
         if (_spaceBuilder) _spaceBuilder.OnCursorMoved -= HandleCursorMoved;
-        _placeShip.performed -= _onPlaceShip;
-        _cycleShip.performed -= _onCycleShip;
-        _rotateShipRight.performed -= _onRotateShip;
-        _rotateShipLeft.performed -= _onRotateShip;
+        if (_placeShip != null) _placeShip.performed -= _onPlaceShip;
+        if (_cycleShip != null) _cycleShip.performed -= _onCycleShip;
+        if (_rotateShipRight != null) _rotateShipRight.performed -= _onRotateShip;
+        if (_rotateShipLeft != null) _rotateShipLeft.performed -= _onRotateShip;
         hover.current.Clicked -= PlaceShip;
         hover.current.Shipclick -= Redo;
     }

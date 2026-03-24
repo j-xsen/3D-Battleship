@@ -36,10 +36,10 @@ public class ReadyButton : MonoBehaviour
         }*/
     }
 
-   /*public void Ready()
+   public void Ready()
     {
-        SceneManager.LoadScene("GamePlay")
-    }*/
+        SceneManager.LoadScene("GamePlay");
+    }
 
     public void ReadyTrigger()
     {
