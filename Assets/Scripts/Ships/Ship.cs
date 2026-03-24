@@ -12,7 +12,7 @@ namespace Ships
     
     public abstract class Ship
     {
-        public abstract bool HasValidPlacement(int fieldSize);
+        public abstract bool HasValidPlacement(Vector3 size);
         public void Rotate(Transform transform)
         {
             _axes.TransformFrom(transform);

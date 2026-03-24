@@ -6,9 +6,9 @@ namespace Ships
     {
         protected Ship _ship;
 
-        public bool HasValidPlacement(int fieldSize)
+        public bool HasValidPlacement(Vector3 size)
         {
-            return _ship.HasValidPlacement(fieldSize);
+            return _ship.HasValidPlacement(size);
         }
 
         public void Rotate()

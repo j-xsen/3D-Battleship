@@ -12,7 +12,9 @@ public class SpaceBuilder : MonoBehaviour
     public event Action OnCursorMoved;
     
     [SerializeField] private GameObject spacePrefab; // Prefab of empty space cube
-    [SerializeField] private int size; // Size of map
+    [SerializeField] private int sizeWidth; // Size of map
+    [SerializeField] private int sizeHeight; // Size of map
+    [SerializeField] private int sizeDepth; // Size of map
     [SerializeField] private Material defaultMat; // Default material for prefab
     [SerializeField] private Material selectMat; // Material upon cursor selected
     [SerializeField] private bool showCursor; // enable/disable showing the cursor
@@ -46,9 +48,9 @@ public class SpaceBuilder : MonoBehaviour
         return new Vector3(_selectedX, _selectedY, _selectedZ);
     }
 
-    public int GetSize()
+    public Vector3 GetSize()
     {
-        return size;
+        return new Vector3(sizeWidth, sizeHeight, sizeDepth);
     }
     
     private void Start()
@@ -88,7 +90,7 @@ public class SpaceBuilder : MonoBehaviour
         _selectBack.performed += _backCtx;
         
         // make an array of renderers so we don't keep calling GetComponent
-        _renderers = new Renderer[size, size, size];
+        _renderers = new Renderer[sizeWidth, sizeHeight, sizeDepth];
         GenerateField();
         // init to 0,0,0
         UpdateSelected(0,0,0);
@@ -121,28 +123,27 @@ public class SpaceBuilder : MonoBehaviour
     }
     private void MoveRow(bool further)
     {
-        if ((further) & (row < (size -1)))
+        if ((further) & (row < (sizeDepth-1)))
         {
-            for (int i = 0; i < size; i++)
+            for (int i = 0; i < sizeWidth; i++)
             {
-                for (int j = 0; j < size; j++)
+                for (int j = 0; j < sizeHeight; j++)
                 {
                     //_renderers[i, j, row].GetComponent<BoxCollider>().enabled = false;
                     _renderers[i,j,row].gameObject.layer = LayerMask.NameToLayer("Blocked");
                 }
             }
-            if (row != (size - 1))
+            if (row != (sizeDepth - 1))
             {
-                row = row + 1;
- //               Debug.Log(row);
+                row += 1;
             }
         }
         else if ((!further) & (row >= 0))
         {
 
-            for (int i = 0; i < size; i++)
+            for (int i = 0; i < sizeWidth; i++)
             {
-                for (int j = 0; j < size; j++)
+                for (int j = 0; j < sizeHeight; j++)
                 {
                     //_renderers[i, j, row].GetComponent<BoxCollider>().enabled = true;
                     _renderers[i, j, row].gameObject.layer = LayerMask.NameToLayer("Default");
@@ -150,8 +151,7 @@ public class SpaceBuilder : MonoBehaviour
             }
             if (row != 0)
             {
-                row = row - 1;
-  //              Debug.Log(row);
+                row -= 1;
             }
         }
     }
@@ -165,7 +165,7 @@ public class SpaceBuilder : MonoBehaviour
         int newZ = z;
 
         if (0 > newX || 0 > newY || 0 > newZ) return;
-        if (size <= newX || size <= newY || size <= newZ) return;
+        if (sizeWidth <= newX || sizeHeight <= newY || sizeDepth <= newZ) return;
 
         if (showCursor) _renderers[_selectedX, _selectedY, _selectedZ].material = defaultMat;
 
@@ -187,7 +187,7 @@ public class SpaceBuilder : MonoBehaviour
         int newZ = z + _selectedZ;
 
         if (0 > newX || 0 > newY || 0 > newZ) return;
-        if (size <= newX || size <= newY || size <= newZ) return;
+        if (sizeWidth <= newX || sizeHeight <= newY || sizeDepth <= newZ) return;
         
         if (showCursor) _renderers[_selectedX, _selectedY, _selectedZ].material = defaultMat;
 
@@ -205,11 +205,11 @@ public class SpaceBuilder : MonoBehaviour
     private void GenerateField()
     {
         // create field
-        for (int x = 0; x < size; x++)
+        for (int x = 0; x < sizeWidth; x++)
         {
-            for (int y = 0; y < size; y++)
+            for (int y = 0; y < sizeHeight; y++)
             {
-                for (int z = 0; z < size; z++)
+                for (int z = 0; z < sizeDepth; z++)
                 {
                     GameObject newSpace = Instantiate(spacePrefab, new Vector3(x,y,z), Quaternion.identity, this.transform);
                     //newSpace.transform.parent = null;
@@ -220,8 +220,10 @@ public class SpaceBuilder : MonoBehaviour
             }
         }
         
-        float pos = (size - 1) / 2f;
-        _origin = new Vector3(pos, pos, pos); // origin for rotation
+        float posX = (sizeWidth - 1) / 2f;
+        float posY = (sizeHeight - 1) / 2f;
+        float posZ = (sizeDepth - 1) / 2f;
+        _origin = new Vector3(posX, posY, posZ); // origin for rotation
         
         // move camera to center field
         Camera mainCamera = Camera.main;
@@ -231,6 +233,6 @@ public class SpaceBuilder : MonoBehaviour
             return;
         }
 
-        mainCamera.transform.position = new Vector3(pos, pos, -size);
+        mainCamera.transform.position = new Vector3(posX, posY, -sizeDepth);
     }
 }
