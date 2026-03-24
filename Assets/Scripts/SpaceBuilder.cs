@@ -1,11 +1,6 @@
 using System;
-using System.ComponentModel;
 using UnityEngine;
 using UnityEngine.InputSystem;
-using UnityEngine.Rendering.Universal;
-using UnityEngine.UI;
-using TMPro;
-using UnityEngine.EventSystems;
 
 public class SpaceBuilder : MonoBehaviour
 {
@@ -37,7 +32,7 @@ public class SpaceBuilder : MonoBehaviour
     private Action<InputAction.CallbackContext> _rightCtx;
     private Action<InputAction.CallbackContext> _forwardCtx;
     private Action<InputAction.CallbackContext> _backCtx;
-    private int row = 0;
+    private int row;
 
 
     private Vector3 _origin;
@@ -57,9 +52,9 @@ public class SpaceBuilder : MonoBehaviour
     {
         DontDestroyOnLoad(this);
         //    hovers = GetComponent<hover>();
-        if (hover.current != null)
+        if (HoverActions.current)
         {
-            hover.current.Pos += UpdateSelectedMos;
+            HoverActions.current.UpdatePosition += UpdateSelectedMos;
         }
         else
         {
@@ -104,7 +99,7 @@ public class SpaceBuilder : MonoBehaviour
         if (_selectLeft != null) _selectLeft.performed -= _leftCtx;
         if (_selectForward != null) _selectForward.performed -= _forwardCtx;
         if (_selectBack != null) _selectBack.performed -= _backCtx;
-        hover.current.Pos -= UpdateSelected;
+        HoverActions.current.UpdatePosition -= UpdateSelected;
     }
 
     private void Update()

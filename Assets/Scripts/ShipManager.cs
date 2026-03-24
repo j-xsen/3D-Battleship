@@ -3,9 +3,7 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
-using System.Runtime.CompilerServices;
 using TMPro;
-using Unity.VisualScripting;
 using UnityEngine;
 using UnityEngine.EventSystems;
 using UnityEngine.InputSystem;
@@ -46,9 +44,7 @@ public class ShipManager : MonoBehaviour
     private SpaceBuilder _spaceBuilder;
     private Dictionary<ShipTypes, int> _shipRations; // currently defined in Start(), is the number of ships allowed
     private Dictionary<ShipTypes, List<ShipView>> _shipObjects; // a list of all ship game objects to keep count
-
-
-
+    
     // inputs
     private InputAction _placeShip;
     private Action<InputAction.CallbackContext> _onPlaceShip;
@@ -60,18 +56,18 @@ public class ShipManager : MonoBehaviour
 
 
     //for setting collision detections
-    private Vector3 bcollider;
-    private Vector3 ccollider;
+    private Vector3 _bCollider;
+    private Vector3 _cCollider;
     //check how many total are left
-    private int _shipcount = 0;
+    private int _shipCount;
     //prevent overlap
     public LayerMask overlap;
     //making a number to add onto names
-    private int _index = 0;
+    private int _index;
     private void Start()
     {
-        hover.current.Clicked += PlaceShip;
-        hover.current.Shipclick += Redo;
+        HoverActions.current.Clicked += PlaceShip;
+        HoverActions.current.ShipClicked += Redo;
         texts = new TMP_Text[] { buttonOne.gameObject.GetComponentInChildren<TMP_Text>(), buttonTwo.gameObject.GetComponentInChildren<TMP_Text>(), buttonThree.gameObject.GetComponentInChildren<TMP_Text>(), buttonFour.gameObject.GetComponentInChildren<TMP_Text>() };
         // input setup
         _placeShip = InputSystem.actions.FindAction("SpaceField/ShipPlace");
@@ -112,11 +108,11 @@ public class ShipManager : MonoBehaviour
             for (int i = 0; i < count; i++)
             {
                 objects.Add(null);
-                _shipcount = _shipcount + 1;
+                _shipCount = _shipCount + 1;
             }
             _shipObjects[shipType] = objects;
         }
-        Debug.Log("shipcount: " + _shipcount);
+        Debug.Log("shipcount: " + _shipCount);
 
         _placing = true; // config
         _selectedShip = ShipTypes.Two; // defaults ghost ship to the two wide ship
@@ -169,10 +165,10 @@ public class ShipManager : MonoBehaviour
         }
     }*/
 
-    private void Redo(GameObject Ship)
+    private void Redo(GameObject ship)
     {
         //Debug.Log("got this far");
-        ChosenShip(Ship.GetComponent<LineShipView>().shipLength - 2);
+        ChosenShip(ship.GetComponent<LineShipView>().shipLength - 2);
         //Debug.Log(_shipObjects[_selectedShip]);
         //_shipObjects[_selectedShip].RemoveAt(Ship.GetComponent<LineShipView>().index);
         for (int i = 0; i < _shipObjects[_selectedShip].Count; i++)
@@ -181,13 +177,11 @@ public class ShipManager : MonoBehaviour
             Debug.Log("found ship name: " + Ship.name);
             Debug.Log("listed ship name: " + _shipObjects[_selectedShip][i].gameObject.name);
             */
-            if (_shipObjects[_selectedShip][i].gameObject.name == Ship.name)
-            {
-                _shipObjects[_selectedShip].RemoveAt(i);
-                Destroy(Ship);
-                texts[(int)_selectedShip].text = SelectedRemaining() + "";
-                return;
-            }
+            if (_shipObjects[_selectedShip][i].gameObject.name != ship.name) continue;
+            _shipObjects[_selectedShip].RemoveAt(i);
+            Destroy(ship);
+            texts[(int)_selectedShip].text = SelectedRemaining() + "";
+            return;
             //Debug.Log(_shipObjects[_selectedShip]);
         }
         Debug.Log("couldn't find ship");
@@ -200,8 +194,8 @@ public class ShipManager : MonoBehaviour
         if (_cycleShip != null) _cycleShip.performed -= _onCycleShip;
         if (_rotateShipRight != null) _rotateShipRight.performed -= _onRotateShip;
         if (_rotateShipLeft != null) _rotateShipLeft.performed -= _onRotateShip;
-        hover.current.Clicked -= PlaceShip;
-        hover.current.Shipclick -= Redo;
+        HoverActions.current.Clicked -= PlaceShip;
+        HoverActions.current.ShipClicked -= Redo;
     }
 
     private int SelectedRemaining()
@@ -248,29 +242,14 @@ public class ShipManager : MonoBehaviour
 
     private void ChosenShip(int clicked)
     {
-        switch (clicked)
+        _selectedShip = clicked switch
         {
-            case 0:
-                {
-                    _selectedShip = ShipTypes.Two;
-                    break;
-                }
-            case 1:
-                {
-                    _selectedShip = ShipTypes.Three;
-                    break;
-                }
-            case 2:
-                {
-                    _selectedShip = ShipTypes.Four;
-                    break;
-                }
-            case 3:
-                {
-                    _selectedShip = ShipTypes.Five;
-                    break;
-                }
-        }
+            0 => ShipTypes.Two,
+            1 => ShipTypes.Three,
+            2 => ShipTypes.Four,
+            3 => ShipTypes.Five,
+            _ => _selectedShip
+        };
         //ReinstantiateGhost();
     }
 
@@ -366,31 +345,31 @@ public class ShipManager : MonoBehaviour
         if (SelectedRemaining() == 0) return; // check if ship available.
                                               //  Debug.Log("Not Enough");
         int len = _ghost.GetComponent<LineShipView>().shipLength;
-        ccollider = _ghost.transform.position;
+        _cCollider = _ghost.transform.position;
 
         //determine the direction for the collider check
-        if ( _ghost.transform.rotation.eulerAngles.y == 90)
+        if ( Mathf.Approximately(_ghost.transform.rotation.eulerAngles.y, 90))
         {
-            bcollider = new Vector3(1, 1, len);
-            ccollider.z = ccollider.z + (float)((len - 1) * .5);
+            _bCollider = new Vector3(1, 1, len);
+            _cCollider.z = _cCollider.z + (float)((len - 1) * .5);
           //  Debug.Log("up " + _ghost.transform.rotation.eulerAngles.y);
         }
-        else if ( _ghost.transform.rotation.eulerAngles.z == 90)
+        else if ( Mathf.Approximately(_ghost.transform.rotation.eulerAngles.z, 90))
         {
-            bcollider = new Vector3(1, len, 1);
-            ccollider.y = ccollider.y + (float)((len - 1) * .5);
+            _bCollider = new Vector3(1, len, 1);
+            _cCollider.y = _cCollider.y + (float)((len - 1) * .5);
            // Debug.Log("right" + _ghost.transform.rotation.eulerAngles.z);
         }
         else
         {
-            bcollider = new Vector3(len, 1, 1);
-            ccollider.x = ccollider.x + (float)((len - 1) * .5);
+            _bCollider = new Vector3(len, 1, 1);
+            _cCollider.x = _cCollider.x + (float)((len - 1) * .5);
            // Debug.Log("normal z: " + _ghost.transform.rotation.eulerAngles.z + " y: " + _ghost.transform.rotation.eulerAngles.y);
         }
 
         //the overlap box needs to have dimensions half that of the original, or it will be too large
-        Vector3 correct = bcollider / 3;
-        Collider[] hit = Physics.OverlapBox(ccollider, correct, Quaternion.identity, overlap);
+        Vector3 correct = _bCollider / 3;
+        Collider[] hit = Physics.OverlapBox(_cCollider, correct, Quaternion.identity, overlap);
         foreach (Collider found in hit)
         {
             Debug.Log("colliders: " + found);
@@ -424,10 +403,10 @@ public class ShipManager : MonoBehaviour
         }
         //Debug.Log("index 2: " + (_shipRations[_selectedShip] - SelectedRemaining()));
         Debug.Log("number placed: " + ((_shipRations[_selectedShip] - SelectedRemaining()) - 1));
-        GameObject collider_object = _shipObjects[_selectedShip][(_shipRations[_selectedShip] - SelectedRemaining()) - 1].gameObject;
-        collider_object.layer = LayerMask.NameToLayer("Ship");
-        collider_object.transform.GetChild(0).gameObject.layer = LayerMask.NameToLayer("Ship");
-        collider_object.name = collider_object.name + " " + _index;
+        GameObject colliderObject = _shipObjects[_selectedShip][(_shipRations[_selectedShip] - SelectedRemaining()) - 1].gameObject;
+        colliderObject.layer = LayerMask.NameToLayer("Ship");
+        colliderObject.transform.GetChild(0).gameObject.layer = LayerMask.NameToLayer("Ship");
+        colliderObject.name = colliderObject.name + " " + _index;
         _index = _index + 1;
       //  Debug.Log("listed ship name: " + _shipObjects[_selectedShip][(_shipRations[_selectedShip] - SelectedRemaining()) - 1].gameObject.name);
 
@@ -452,6 +431,6 @@ public class ShipManager : MonoBehaviour
         // Check that it is being run in Play Mode, so it doesn't try to draw this in Editor mode
         if (Application.isPlaying)
             // Draw a cube where the OverlapBox is (positioned where your GameObject is as well as a size)
-            Gizmos.DrawWireCube(ccollider, bcollider);
+            Gizmos.DrawWireCube(_cCollider, _bCollider);
     }
 }
