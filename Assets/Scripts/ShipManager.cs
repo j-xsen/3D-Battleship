@@ -3,28 +3,26 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
-using TMPro;
 using UnityEngine;
 using UnityEngine.EventSystems;
 using UnityEngine.InputSystem;
-using UnityEngine.UI;
+using UnityEngine.Serialization;
+using UnityEngine.UIElements;
 
 public class ShipManager : MonoBehaviour
 {
-    [SerializeField] private LineShipView[] lineShipPrefabs;
+    [FormerlySerializedAs("lineShipPrefabs")]
+    [SerializeField] private ShipView[] shipPrefabs;
+
+    [SerializeField] private UIDocument uiDoc;
+    [SerializeField] private VisualTreeAsset shipPlaceButton;
 
     [Header("Ghost Materials")]
     [SerializeField] private Material ghostValid;
     [SerializeField] private Material ghostInvalid;
-    [Header("buttons")]
-    [SerializeField] private Button buttonOne;
-    [SerializeField] private Button buttonTwo;
-    [SerializeField] private Button buttonThree;
-    [SerializeField] private Button buttonFour;
     [Header("cam")]
     [SerializeField] private GameObject cam;
-
-    private TMP_Text[] texts;
+    
     private enum ShipTypes
     {
         Two,
@@ -43,6 +41,8 @@ public class ShipManager : MonoBehaviour
     private bool _placing; // this is a config bool to toggle updating the ghost
     private SpaceBuilder _spaceBuilder;
     private Dictionary<ShipTypes, int> _shipRations; // currently defined in Start(), is the number of ships allowed
+    private Dictionary<ShipTypes, Button> _shipButtons;
+    private Dictionary<ShipTypes, Label> _shipText;
     private Dictionary<ShipTypes, List<ShipView>> _shipObjects; // a list of all ship game objects to keep count
     
     // inputs
@@ -54,12 +54,9 @@ public class ShipManager : MonoBehaviour
     private Action<InputAction.CallbackContext> _onRotateShip;
     private InputAction _rotateShipLeft;
 
-
     //for setting collision detections
     private Vector3 _bCollider;
     private Vector3 _cCollider;
-    //check how many total are left
-    private int _shipCount;
     //prevent overlap
     public LayerMask overlap;
     //making a number to add onto names
@@ -68,7 +65,7 @@ public class ShipManager : MonoBehaviour
     {
         HoverActions.current.Clicked += PlaceShip;
         HoverActions.current.ShipClicked += Redo;
-        texts = new TMP_Text[] { buttonOne.gameObject.GetComponentInChildren<TMP_Text>(), buttonTwo.gameObject.GetComponentInChildren<TMP_Text>(), buttonThree.gameObject.GetComponentInChildren<TMP_Text>(), buttonFour.gameObject.GetComponentInChildren<TMP_Text>() };
+        
         // input setup
         _placeShip = InputSystem.actions.FindAction("SpaceField/ShipPlace");
         _onPlaceShip = _ => PlaceShip();
@@ -92,27 +89,56 @@ public class ShipManager : MonoBehaviour
             [ShipTypes.Four] = 2,
             [ShipTypes.Five] = 1
         };
-
-        //set up starting UI with number of available ships
-        texts[0].text = (_shipRations[ShipTypes.Two]) + "";
-        texts[1].text = (_shipRations[ShipTypes.Three]) + "";
-        texts[2].text = (_shipRations[ShipTypes.Four]) + "";
-        texts[3].text = (_shipRations[ShipTypes.Five]) + "";
-
+        
+        // ship button container
+        VisualElement container = new()
+        {
+            pickingMode = PickingMode.Ignore,
+            style =
+            {
+                position = Position.Absolute,
+                top = 0,
+                bottom = 0,
+                right = 0,
+                justifyContent = Justify.Center,
+                alignItems = Align.FlexEnd,
+                paddingRight = 32
+            }
+        };
+        uiDoc.rootVisualElement.Add(container);
 
         // init ship objects dict with null values
         _shipObjects = new Dictionary<ShipTypes, List<ShipView>>();
+        _shipButtons = new Dictionary<ShipTypes, Button>();
+        _shipText = new Dictionary<ShipTypes, Label>();
         foreach ((ShipTypes shipType, int count) in _shipRations)
         {
             List<ShipView> objects = new(count);
             for (int i = 0; i < count; i++)
             {
                 objects.Add(null);
-                _shipCount = _shipCount + 1;
             }
             _shipObjects[shipType] = objects;
+            
+            // create button ui
+            VisualElement shipButtonElement = shipPlaceButton.Instantiate(); // ui object
+            
+            // text
+            Label shipSelectLabel = shipButtonElement.Q<Label>("Remaining");
+            shipSelectLabel.text = count.ToString();
+            _shipText[shipType] = shipSelectLabel;
+            
+            // button
+            Button selectButton = shipButtonElement.Q<Button>("Select"); // actual button
+            selectButton.clicked += () => SelectShip(shipType);
+            // set height
+            selectButton.style.height = 50 + (25 * (int)shipType);
+            _shipButtons[shipType] = selectButton;
+            
+            shipButtonElement.pickingMode = PickingMode.Ignore; // remove mouse capture from void
+            shipButtonElement.name = shipType.ToString();
+            container.Add(shipButtonElement);
         }
-        Debug.Log("shipcount: " + _shipCount);
 
         _placing = true; // config
         _selectedShip = ShipTypes.Two; // defaults ghost ship to the two wide ship
@@ -128,47 +154,12 @@ public class ShipManager : MonoBehaviour
         _spaceBuilder.OnCursorMoved += HandleCursorMoved; // gets called every time the cursor moves
         HandleCursorMoved(); // creates ghost on start
 
-        //set up UI Buttons to have listeners
-        buttonOne.onClick.AddListener(() =>
-        {
-            ChosenShip(0);
-            ReinstantiateGhost();
-        });
-        buttonTwo.onClick.AddListener(() =>
-        {
-            ChosenShip(1);
-            ReinstantiateGhost();
-        });
-        buttonThree.onClick.AddListener(() =>
-        {
-            ChosenShip(2);
-            ReinstantiateGhost();
-        });
-        buttonFour.onClick.AddListener(() =>
-        {
-            ChosenShip(3);
-            ReinstantiateGhost();
-        });
-
     }
-
-   /* public void Protect()
-    {
-        for (int i = 0; i < _shipObjects.Count; i++)
-        {
-            ChosenShip(i);
-            foreach (var ship in _shipObjects[_selectedShip])
-            {
-                ship.transform.parent = null;
-                DontDestroyOnLoad(ship);
-            }
-        }
-    }*/
 
     private void Redo(GameObject ship)
     {
         //Debug.Log("got this far");
-        ChosenShip(ship.GetComponent<LineShipView>().shipLength - 2);
+        SelectShip(ship.GetComponent<LineShipView>().shipLength - 2);
         //Debug.Log(_shipObjects[_selectedShip]);
         //_shipObjects[_selectedShip].RemoveAt(Ship.GetComponent<LineShipView>().index);
         for (int i = 0; i < _shipObjects[_selectedShip].Count; i++)
@@ -180,7 +171,8 @@ public class ShipManager : MonoBehaviour
             if (_shipObjects[_selectedShip][i].gameObject.name != ship.name) continue;
             _shipObjects[_selectedShip].RemoveAt(i);
             Destroy(ship);
-            texts[(int)_selectedShip].text = SelectedRemaining() + "";
+            // texts[(int)_selectedShip].text = SelectedRemaining() + "";
+            UpdateButtons();
             return;
             //Debug.Log(_shipObjects[_selectedShip]);
         }
@@ -198,27 +190,31 @@ public class ShipManager : MonoBehaviour
         HoverActions.current.ShipClicked -= Redo;
     }
 
+    private void UpdateButtons()
+    {
+        foreach ((ShipTypes shipType, Button _) in _shipButtons)
+        {
+            int startingRation = _shipRations[shipType];
+            int numberPlaced = _shipObjects[shipType].Count(ship => ship);
+            int remaining = startingRation - numberPlaced;
+            _shipButtons[shipType].SetEnabled(remaining > 0);
+            _shipText[shipType].text = remaining.ToString();
+        }
+    }
+
     private int SelectedRemaining()
     {
         // returns the number of selected ships remaining
         int startingRation = _shipRations[_selectedShip];
         int numberPlaced = _shipObjects[_selectedShip].Count(ship => ship);
-        if (startingRation - numberPlaced == 0)
-        {
-            texts[(int)_selectedShip].gameObject.transform.parent.GetComponent<Button>().interactable = false;
-        }
-        else
-        {
-            texts[(int)_selectedShip].gameObject.transform.parent.GetComponent<Button>().interactable = true;
-        }
         return startingRation - numberPlaced;
     }
 
     private bool GhostValid()
     {
         // TODO - don't allow placing on top of another ship
-        if (SelectedRemaining() <= 0) return false; // check if ship size available
-        return _ghost.HasValidPlacement(_spaceBuilder.GetSize());
+        return SelectedRemaining() > 0 && // check if ship size available
+               _ghost.HasValidPlacement(_spaceBuilder.GetSize());
     }
 
     private Vector3 TransformedPoint()
@@ -240,7 +236,7 @@ public class ShipManager : MonoBehaviour
         _ghost.SetMaterial(GetMaterial());
     }
 
-    private void ChosenShip(int clicked)
+    private void SelectShip(int clicked)
     {
         _selectedShip = clicked switch
         {
@@ -251,6 +247,12 @@ public class ShipManager : MonoBehaviour
             _ => _selectedShip
         };
         //ReinstantiateGhost();
+    }
+
+    private void SelectShip(ShipTypes type)
+    {
+        _selectedShip = type;
+        ReinstantiateGhost();
     }
 
     private void CycleShip()
@@ -311,7 +313,6 @@ public class ShipManager : MonoBehaviour
         }
 
     }
-
 
     public void ChangeMode()
     {
@@ -414,7 +415,8 @@ public class ShipManager : MonoBehaviour
         //  _shipObjects[_selectedShip][(_shipRations[_selectedShip] - SelectedRemaining()) - 1].gameObject.GetComponent<LineShipView>().index = (_shipRations[_selectedShip] - SelectedRemaining()) - 1;
 
         //update UI
-        texts[(int)_selectedShip].text = SelectedRemaining() + "";
+        // texts[(int)_selectedShip].text = SelectedRemaining() + "";
+        UpdateButtons();
 
         HandleCursorMoved(); // checks if out of ships
     }
@@ -422,7 +424,7 @@ public class ShipManager : MonoBehaviour
     private ShipView ObjectFromSelected()
     {
         // Above function but does selected ship
-        return lineShipPrefabs[(int)_selectedShip];
+        return shipPrefabs[(int)_selectedShip];
     }
     
     void OnDrawGizmos()

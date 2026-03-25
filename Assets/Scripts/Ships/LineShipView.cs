@@ -1,5 +1,4 @@
-﻿using System;
-using UnityEngine;
+﻿using UnityEngine;
 
 namespace Ships
 {
@@ -8,8 +7,9 @@ namespace Ships
         [SerializeField] public int shipLength;
         public int shipHealth;
        // public int index;
-        private void Awake()
+        private new void Awake()
         {
+            base.Awake();
             _ship = new LineShip((int)shipLength);
             shipHealth = shipLength;
         }

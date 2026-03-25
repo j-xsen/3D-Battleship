@@ -5,6 +5,12 @@ namespace Ships
     public abstract class ShipView : MonoBehaviour
     {
         protected Ship _ship;
+        private Renderer _renderer;
+
+        protected void Awake()
+        {
+            _renderer = GetComponentInChildren<Renderer>();
+        }
 
         public bool HasValidPlacement(Vector3 size)
         {
@@ -18,7 +24,7 @@ namespace Ships
 
         public void SetMaterial(Material newMat)
         {
-            GetComponentInChildren<Renderer>().material = newMat;
+            _renderer.material = newMat;
         }
 
         public void MoveShip(Vector3 worldPos, Vector3 gamePos)

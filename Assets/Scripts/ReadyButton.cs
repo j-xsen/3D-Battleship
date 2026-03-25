@@ -25,11 +25,12 @@ public class ReadyButton : MonoBehaviour
     // Update is called once per frame
     private void Update()
     {
+        // TODO - readd this, gives error rn
         //might be better to create an event trigger but this is functional
-        if (button.interactable == false & (one.interactable == false & two.interactable == false & three.interactable == false & four.interactable == false))
-        {
-            ReadyTrigger();
-        }
+        // if (button.interactable == false & (one.interactable == false & two.interactable == false & three.interactable == false & four.interactable == false))
+        // {
+        //     ReadyTrigger();
+        // }
         /*else if (button.interactable != false)
         {
             TakeBack();
