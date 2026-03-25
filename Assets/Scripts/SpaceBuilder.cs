@@ -230,4 +230,9 @@ public class SpaceBuilder : MonoBehaviour
 
         mainCamera.transform.position = new Vector3(posX, posY, -sizeDepth);
     }
+
+    public Vector3 GetOrigin()
+    {
+        return _origin;
+    }
 }
