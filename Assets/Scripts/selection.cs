@@ -1,11 +1,16 @@
+
 using Unity.Multiplayer.Center.NetcodeForGameObjectsExample;
 using UnityEngine;
 using UnityEngine.EventSystems;
 using UnityEngine.InputSystem;
 using static UnityEngine.UI.Image;
 
+
+
 public class selection : MonoBehaviour
 {
+    [SerializeField] private SpaceBuilder spaceBuilder;
+
     private Vector2 pos;
     private Vector2 change;
     private Vector2 speed;
@@ -16,8 +21,16 @@ public class selection : MonoBehaviour
     // Start is called once before the first execution of Update after the MonoBehaviour is created
     void Start()
     {
-        origin = new Vector3(4, (float)3.5, (float)3.5);
-        gameObject.transform.position = new Vector3(4, (float)3.5, -9);
+        float center = (spaceBuilder.GetSize() - 1) / 2f;
+        Vector3 baseCenter = new Vector3(center, center, center);
+
+        origin = baseCenter + spaceBuilder.boardOffset;
+
+        float distance = spaceBuilder.GetSize() * 1.5f;
+        Vector3 cameraOffset = new Vector3(0, 0, -distance);
+
+        transform.position = origin + cameraOffset;
+        transform.LookAt(origin);
     }
 
 
