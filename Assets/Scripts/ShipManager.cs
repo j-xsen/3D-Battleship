@@ -18,8 +18,6 @@ public class ShipManager : MonoBehaviour
     [SerializeField] private VisualTreeAsset shipPlaceButton;
     [SerializeField] private SpaceBuilder _spaceBuilder;
 
-    [SerializeField] private LineShipView[] lineShipPrefabs;
-
     [Header("Ghost Materials")]
     [SerializeField] private Material ghostValid;
     [SerializeField] private Material ghostInvalid;
@@ -28,7 +26,7 @@ public class ShipManager : MonoBehaviour
 
     [SerializeField] private bool isActiveBoard = true;//checks if this board is active 
 
-    private TMP_Text[] texts;
+    // private TMP_Text[] texts;
     private enum ShipTypes
     {
         Two,

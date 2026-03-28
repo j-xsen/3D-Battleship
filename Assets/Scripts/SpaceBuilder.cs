@@ -17,9 +17,7 @@ public class SpaceBuilder : MonoBehaviour
     public Vector3 boardOffset;//used to put grids apart and for camera offsetting 
 
     [SerializeField] private bool isActiveBoard = true;
-
-
-
+    
     private Renderer[,,] _renderers; // saves on expensive GetComponent calls
     private int _selectedX;
     private int _selectedY;

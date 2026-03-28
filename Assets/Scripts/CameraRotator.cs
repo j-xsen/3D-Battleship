@@ -9,6 +9,21 @@ public class CameraRotator : MonoBehaviour
     private Vector2 _speed;
     private const float LeftCap = 40;
     private const float RightCap = 320;
+
+    void Start()
+    {
+        // assumes x/width & z/depth are same in SpaceBuilder size
+        float center = (spaceBuilder.GetSize().x - 1) / 2f;
+        Vector3 baseCenter = new Vector3(center, center, center);
+        
+        Vector3 origin = baseCenter + spaceBuilder.boardOffset;
+        
+        float distance = spaceBuilder.GetSize().x * 1.5f;
+        Vector3 cameraOffset = new Vector3(0, 0, -distance);
+        
+        transform.position = origin + cameraOffset;
+        transform.LookAt(origin);
+    }
     
     void Update()
     {
