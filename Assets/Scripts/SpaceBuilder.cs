@@ -13,6 +13,13 @@ public class SpaceBuilder : MonoBehaviour
     [SerializeField] private Material defaultMat; // Default material for prefab
     [SerializeField] private Material selectMat; // Material upon cursor selected
     [SerializeField] private bool showCursor; // enable/disable showing the cursor
+
+    public Vector3 boardOffset;//used to put grids apart and for camera offsetting 
+
+    [SerializeField] private bool isActiveBoard = true;
+
+
+
     private Renderer[,,] _renderers; // saves on expensive GetComponent calls
     private int _selectedX;
     private int _selectedY;
@@ -33,6 +40,12 @@ public class SpaceBuilder : MonoBehaviour
     private Action<InputAction.CallbackContext> _forwardCtx;
     private Action<InputAction.CallbackContext> _backCtx;
     private int row;
+
+
+    public void SetActiveBoard(bool active)
+    {
+        isActiveBoard = active; 
+    }
 
 
     private Vector3 _origin;
@@ -104,6 +117,8 @@ public class SpaceBuilder : MonoBehaviour
 
     private void Update()
     {
+        if (!isActiveBoard) return;//checks if the current board i.e player 1 is currently active, if not, it returns 
+
         if (Mouse.current.scroll.ReadValue().y < 0)
         {
             MoveRow(true);
@@ -153,6 +168,8 @@ public class SpaceBuilder : MonoBehaviour
 
     private void UpdateSelectedMos(int x, int y, int z)
     {
+        if (!isActiveBoard) return;//checks if the current board i.e player 1 is currently active, if not, it returns 
+
         // validate
         // TODO: notify of error?
         int newX = x;
@@ -175,6 +192,8 @@ public class SpaceBuilder : MonoBehaviour
 
     private void UpdateSelected(int x, int y, int z)
     {
+        if (!isActiveBoard) return;//checks if the current board i.e player 1 is currently active, if not, it returns 
+
         // validate
         // TODO: notify of error?
         int newX = x + _selectedX;
@@ -206,7 +225,7 @@ public class SpaceBuilder : MonoBehaviour
             {
                 for (int z = 0; z < sizeDepth; z++)
                 {
-                    GameObject newSpace = Instantiate(spacePrefab, new Vector3(x,y,z), Quaternion.identity, this.transform);
+                    GameObject newSpace = Instantiate(spacePrefab, new Vector3(x,y,z) + boardOffset, Quaternion.identity, this.transform);
                     //newSpace.transform.parent = null;
                     //DontDestroyOnLoad(newSpace);
                     newSpace.name = string.Concat(x, y, z);
@@ -218,17 +237,16 @@ public class SpaceBuilder : MonoBehaviour
         float posX = (sizeWidth - 1) / 2f;
         float posY = (sizeHeight - 1) / 2f;
         float posZ = (sizeDepth - 1) / 2f;
-        _origin = new Vector3(posX, posY, posZ); // origin for rotation
+        _origin = new Vector3(posX, posY, posZ) + boardOffset; // origin for rotation
         
-        // move camera to center field
+        /* move camera to center field
         Camera mainCamera = Camera.main;
         if (!mainCamera)
         {
             Debug.LogError("No main camera");
             return;
         }
-
-        mainCamera.transform.position = new Vector3(posX, posY, -sizeDepth);
+        mainCamera.transform.position = new Vector3(posX, posY, -sizeDepth) + boardOffset;*/
     }
 
     public Vector3 GetOrigin()

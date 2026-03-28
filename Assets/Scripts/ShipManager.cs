@@ -16,13 +16,19 @@ public class ShipManager : MonoBehaviour
 
     [SerializeField] private UIDocument uiDoc;
     [SerializeField] private VisualTreeAsset shipPlaceButton;
+    [SerializeField] private SpaceBuilder _spaceBuilder;
+
+    [SerializeField] private LineShipView[] lineShipPrefabs;
 
     [Header("Ghost Materials")]
     [SerializeField] private Material ghostValid;
     [SerializeField] private Material ghostInvalid;
     [Header("cam")]
     [SerializeField] private GameObject cam;
-    
+
+    [SerializeField] private bool isActiveBoard = true;//checks if this board is active 
+
+    private TMP_Text[] texts;
     private enum ShipTypes
     {
         Two,
@@ -39,7 +45,7 @@ public class ShipManager : MonoBehaviour
 
     private ShipTypes _selectedShip; // the current "ghost" ship
     private bool _placing; // this is a config bool to toggle updating the ghost
-    private SpaceBuilder _spaceBuilder;
+    //private SpaceBuilder _spaceBuilder;
     private Dictionary<ShipTypes, int> _shipRations; // currently defined in Start(), is the number of ships allowed
     private Dictionary<ShipTypes, Button> _shipButtons;
     private Dictionary<ShipTypes, Label> _shipText;
@@ -144,7 +150,7 @@ public class ShipManager : MonoBehaviour
         _selectedShip = ShipTypes.Two; // defaults ghost ship to the two wide ship
 
         // used to access config (i.e. field size) & cursor event
-        _spaceBuilder = GetComponent<SpaceBuilder>();
+        //_spaceBuilder = GetComponent<SpaceBuilder>();
         if (!_spaceBuilder)
         {
             Debug.LogError("No SpaceBuilder found on ShipManager!");
@@ -230,6 +236,8 @@ public class ShipManager : MonoBehaviour
 
     private void RotateShip()
     {
+        if (!isActiveBoard) return;
+
         // alters the rotation axis
         if (!_ghost) return;
         _ghost.Rotate();
@@ -257,6 +265,8 @@ public class ShipManager : MonoBehaviour
 
     private void CycleShip()
     {
+        if (!isActiveBoard) return;
+
         // called to cycle through ship types
         _selectedShip += 1;
         if (_selectedShip.CompareTo(MaxShip) > 0) _selectedShip = MinShip; // reset to min ship when bigger than max
@@ -284,6 +294,8 @@ public class ShipManager : MonoBehaviour
 
     private void HandleCursorMoved()
     {
+        if (!isActiveBoard) return;
+
         if (!_placing) return;
 
         if (_ghost)
@@ -338,6 +350,8 @@ public class ShipManager : MonoBehaviour
     }
     private void PlaceShip()
     {
+        if (!isActiveBoard) return;
+
         // places a ship where the ghost ship is
 
         if (!GhostValid()) return; // ghost ship required
@@ -434,5 +448,11 @@ public class ShipManager : MonoBehaviour
         if (Application.isPlaying)
             // Draw a cube where the OverlapBox is (positioned where your GameObject is as well as a size)
             Gizmos.DrawWireCube(_cCollider, _bCollider);
+    }
+
+
+    public void SetActiveBoard(bool active)
+    {
+        isActiveBoard = active;
     }
 }
