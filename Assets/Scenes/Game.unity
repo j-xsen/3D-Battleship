@@ -10487,14 +10487,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: bea3f86e3ce82014288ff129d5d377b6, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::ShipManager
-  shipPrefabs:
-  - {fileID: 7505190258006911646, guid: 230ed9a3413e91b44972837110117d5f, type: 3}
-  - {fileID: 4934041461330996125, guid: f1390fead6403554d8abb8a65a060268, type: 3}
-  - {fileID: 5259067707087747510, guid: af8144da39e0bed44a268064f0ba27b9, type: 3}
-  - {fileID: 6513169586624146606, guid: d5f783790029bd64492851bfb47b41c9, type: 3}
-  uiDoc: {fileID: 1079158958}
-  shipPlaceButton: {fileID: 9197481963319205126, guid: 26d87e7d4b7c10c4da7cc5a9413c7b1d, type: 3}
-  _spaceBuilder: {fileID: 412167431}
+  spaceBuilder: {fileID: 412167431}
   ghostValid: {fileID: 2100000, guid: f9f6ad8fbc9e3834d9c10c61b3177ebc, type: 2}
   ghostInvalid: {fileID: 2100000, guid: 6127d4de711a943449b4666e964c5b93, type: 2}
   cam: {fileID: 843973634}
@@ -10526,6 +10519,11 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 71369264ce8e44349d35484e1f2ebb27, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Ships.Types.ShipTypeManager
+  lineShipPrefabs:
+  - {fileID: 7505190258006911646, guid: 230ed9a3413e91b44972837110117d5f, type: 3}
+  - {fileID: 4934041461330996125, guid: f1390fead6403554d8abb8a65a060268, type: 3}
+  - {fileID: 5259067707087747510, guid: af8144da39e0bed44a268064f0ba27b9, type: 3}
+  - {fileID: 6513169586624146606, guid: d5f783790029bd64492851bfb47b41c9, type: 3}
 --- !u!114 &412167436
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -10992,14 +10990,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: bea3f86e3ce82014288ff129d5d377b6, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::ShipManager
-  shipPrefabs:
-  - {fileID: 7505190258006911646, guid: 230ed9a3413e91b44972837110117d5f, type: 3}
-  - {fileID: 4934041461330996125, guid: f1390fead6403554d8abb8a65a060268, type: 3}
-  - {fileID: 5259067707087747510, guid: af8144da39e0bed44a268064f0ba27b9, type: 3}
-  - {fileID: 6513169586624146606, guid: d5f783790029bd64492851bfb47b41c9, type: 3}
-  uiDoc: {fileID: 884394530}
-  shipPlaceButton: {fileID: 9197481963319205126, guid: 26d87e7d4b7c10c4da7cc5a9413c7b1d, type: 3}
-  _spaceBuilder: {fileID: 642157105}
+  spaceBuilder: {fileID: 642157105}
   ghostValid: {fileID: 2100000, guid: f9f6ad8fbc9e3834d9c10c61b3177ebc, type: 2}
   ghostInvalid: {fileID: 2100000, guid: 6127d4de711a943449b4666e964c5b93, type: 2}
   cam: {fileID: 951163517}
