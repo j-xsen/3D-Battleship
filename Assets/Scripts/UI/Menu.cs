@@ -1,16 +1,19 @@
 using UnityEngine;
 
-public class Menu : MonoBehaviour
+namespace UI
 {
-    public GameObject start;
-
-    public void Quit()
+    public class Menu : MonoBehaviour
     {
-        Application.Quit();
-    }
+        public GameObject start;
 
-    public void Begin()
-    {
-        start.SetActive(false);
+        public void Quit()
+        {
+            Application.Quit();
+        }
+
+        public void Begin()
+        {
+            start.SetActive(false);
+        }
     }
 }

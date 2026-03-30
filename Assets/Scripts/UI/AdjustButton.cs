@@ -1,26 +1,29 @@
 using TMPro;
 using UnityEngine;
 
-public class AdjustButton : MonoBehaviour
+namespace UI
 {
-    private TMP_Text child;
-    // Start is called once before the first execution of Update after the MonoBehaviour is created
-    void Start()
+    public class AdjustButton : MonoBehaviour
     {
-        child = GetComponentInChildren<TMP_Text>();
-        child.text = "Adjust";
-    }
-
-    // Update is called once per frame
-    public void Clicked()
-    {
-        if (child.text == "Adjust")
+        private TMP_Text child;
+        // Start is called once before the first execution of Update after the MonoBehaviour is created
+        void Start()
         {
-            child.text = "Place";
-        }
-        else
-        {
+            child = GetComponentInChildren<TMP_Text>();
             child.text = "Adjust";
+        }
+
+        // Update is called once per frame
+        public void Clicked()
+        {
+            if (child.text == "Adjust")
+            {
+                child.text = "Place";
+            }
+            else
+            {
+                child.text = "Adjust";
+            }
         }
     }
 }

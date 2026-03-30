@@ -1,12 +1,15 @@
 ﻿using UnityEngine;
 using UnityEngine.SceneManagement;
 
-public class PlayButton : MonoBehaviour
+namespace UI
 {
-    public string sceneName;
-
-    public void Press()
+    public class PlayButton : MonoBehaviour
     {
-        SceneManager.LoadScene(sceneName, LoadSceneMode.Additive);
+        public string sceneName;
+
+        public void Press()
+        {
+            SceneManager.LoadScene(sceneName, LoadSceneMode.Additive);
+        }
     }
 }

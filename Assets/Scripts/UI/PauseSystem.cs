@@ -2,17 +2,20 @@ using UnityEngine;
 using UnityEngine.SceneManagement;
 using UnityEngine.UI;
 
-public class PauseSystem : MonoBehaviour
+namespace UI
 {
-    public Button continueButton;
-    public Button menuButton;
-    public Button quitButton;
-
-    void Start()
+    public class PauseSystem : MonoBehaviour
     {
-        continueButton.onClick.AddListener(() => gameObject.SetActive(false));
-        menuButton.onClick.AddListener(() => SceneManager.LoadScene("Main Menu_network"));
-        quitButton.onClick.AddListener(() => Application.Quit());
+        public Button continueButton;
+        public Button menuButton;
+        public Button quitButton;
+
+        void Start()
+        {
+            continueButton.onClick.AddListener(() => gameObject.SetActive(false));
+            menuButton.onClick.AddListener(() => SceneManager.LoadScene("Main Menu_network"));
+            quitButton.onClick.AddListener(() => Application.Quit());
+        }
     }
 }
 
