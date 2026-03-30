@@ -10430,6 +10430,8 @@ GameObject:
   - component: {fileID: 412167434}
   - component: {fileID: 412167431}
   - component: {fileID: 412167433}
+  - component: {fileID: 412167435}
+  - component: {fileID: 412167436}
   m_Layer: 0
   m_Name: Player_1_Grid
   m_TagString: Builder
@@ -10512,6 +10514,32 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 8a69bc1c36ef13342bf3bb8901a98aa7, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::hover
+--- !u!114 &412167435
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 412167430}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 71369264ce8e44349d35484e1f2ebb27, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::Ships.Types.ShipTypeManager
+--- !u!114 &412167436
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 412167430}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 8b0c87598b464673a6126e765f817d32, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::UI.ShipPlacementUI
+  uiDoc: {fileID: 1079158958}
+  shipPlaceButton: {fileID: 9197481963319205126, guid: 26d87e7d4b7c10c4da7cc5a9413c7b1d, type: 3}
 --- !u!1 &413106002
 GameObject:
   m_ObjectHideFlags: 0
@@ -10951,7 +10979,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 1
+  m_IsActive: 0
 --- !u!114 &642157104
 MonoBehaviour:
   m_ObjectHideFlags: 0
