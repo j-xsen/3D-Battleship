@@ -42,5 +42,10 @@ namespace Ships
         {
             _ship.SetAxes(axes);
         }
+
+        public Ship GetShip()
+        {
+            return _ship;
+        }
     }
 }

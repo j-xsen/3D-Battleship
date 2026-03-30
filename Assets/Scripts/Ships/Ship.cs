@@ -59,5 +59,10 @@ namespace Ships
                 _ => throw new ArgumentOutOfRangeException()
             };
         }
+
+        public Vector3 GetPos()
+        {
+            return new Vector3(X, Y, Z);
+        }
     }
 }

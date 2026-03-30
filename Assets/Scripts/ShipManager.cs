@@ -3,6 +3,7 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
+using Network;
 using Ships.Types;
 using UI;
 using UnityEngine;
@@ -50,9 +51,17 @@ public class ShipManager : MonoBehaviour
     public LayerMask overlap;
     //making a number to add onto names
     private int _index;
+    
+    // network
+    private SessionManager _network;
 
     private void Start()
     {
+        // find network
+        _network = GameObject.FindWithTag("NetworkManager").GetComponent<SessionManager>();
+        if(!_network) Debug.LogError("Unable to find NetworkManager!");
+        
+        // hover events
         HoverActions.current.Clicked += PlaceShip;
         HoverActions.current.ShipClicked += Redo;
 
@@ -117,7 +126,7 @@ public class ShipManager : MonoBehaviour
             Debug.Log("listed ship name: " + _shipObjects[_selectedShip][i].gameObject.name);
             */
             if (_shipObjects[_selectedShip][i].gameObject.name != ship.name) continue;
-            _shipObjects[_selectedShip].RemoveAt(i);
+            _shipObjects[_selectedShip][i] = null;
             Destroy(ship);
             // texts[(int)_selectedShip].text = SelectedRemaining() + "";
             _placementUI.UpdateButtons();
@@ -293,19 +302,19 @@ public class ShipManager : MonoBehaviour
         if (Mathf.Approximately(_ghost.transform.rotation.eulerAngles.y, 90))
         {
             _bCollider = new Vector3(1, 1, len);
-            _cCollider.z = _cCollider.z + (float)((len - 1) * .5);
+            _cCollider.z += (float)((len - 1) * .5);
             //  Debug.Log("up " + _ghost.transform.rotation.eulerAngles.y);
         }
         else if (Mathf.Approximately(_ghost.transform.rotation.eulerAngles.z, 90))
         {
             _bCollider = new Vector3(1, len, 1);
-            _cCollider.y = _cCollider.y + (float)((len - 1) * .5);
+            _cCollider.y += (float)((len - 1) * .5);
             // Debug.Log("right" + _ghost.transform.rotation.eulerAngles.z);
         }
         else
         {
             _bCollider = new Vector3(len, 1, 1);
-            _cCollider.x = _cCollider.x + (float)((len - 1) * .5);
+            _cCollider.x += (float)((len - 1) * .5);
             // Debug.Log("normal z: " + _ghost.transform.rotation.eulerAngles.z + " y: " + _ghost.transform.rotation.eulerAngles.y);
         }
 
@@ -323,38 +332,27 @@ public class ShipManager : MonoBehaviour
             return;
         }
 
-        if (_shipTypeManager.Rations(_selectedShip) - SelectedRemaining() >= _shipObjects[_selectedShip].Count)
-        {
-            _shipObjects[_selectedShip].Add(
-                Instantiate(ObjectFromSelected(),
-                    _ghost.transform.position,
-                    _ghost.transform.rotation,
-                    transform));
-        }
-        else
-        {
-            // get the dict of ship objects for the selected ship
-            // then get the index of the maximum ship ration - remaining amount
-            // then set that to a prefab placed at the ghost's location
-            Debug.Log((_shipTypeManager.Rations(_selectedShip) - SelectedRemaining()));
-            _shipObjects[_selectedShip][_shipTypeManager.Rations(_selectedShip) - SelectedRemaining()] =
-                Instantiate(ObjectFromSelected(),
-                    _ghost.transform.position,
-                    _ghost.transform.rotation,
-                    transform);
-        }
+        // get the dict of ship objects for the selected ship
+        // then get the index of the maximum ship ration - remaining amount
+        // then set that to a prefab placed at the ghost's location
+        int index = _shipTypeManager.Rations(_selectedShip) - SelectedRemaining();
+        _shipObjects[_selectedShip][index] =
+            Instantiate(ObjectFromSelected(),
+                _ghost.transform.position,
+                _ghost.transform.rotation,
+                transform);
 
         //Debug.Log("index 2: " + (_shipRations[_selectedShip] - SelectedRemaining()));
-        Debug.Log("number placed: " + ((_shipTypeManager.Rations(_selectedShip) - SelectedRemaining()) - 1));
+        Debug.Log("number placed: " + index);
         GameObject colliderObject =
-            _shipObjects[_selectedShip][(_shipTypeManager.Rations(_selectedShip) - SelectedRemaining()) - 1].gameObject;
+            _shipObjects[_selectedShip][index].gameObject;
         colliderObject.layer = LayerMask.NameToLayer("Ship");
         colliderObject.transform.GetChild(0).gameObject.layer = LayerMask.NameToLayer("Ship");
         colliderObject.name = colliderObject.name + " " + _index;
-        _index = _index + 1;
+        _index += 1;
         //  Debug.Log("listed ship name: " + _shipObjects[_selectedShip][(_shipRations[_selectedShip] - SelectedRemaining()) - 1].gameObject.name);
-
-
+        
+        _network.PlaceShip(_selectedShip, ShipsPlaced(_selectedShip), _ghost);
         //  _shipObjects[_selectedShip][(_shipRations[_selectedShip] - SelectedRemaining()) - 1].gameObject.GetComponent<LineShipView>().index = (_shipRations[_selectedShip] - SelectedRemaining()) - 1;
 
         //update UI

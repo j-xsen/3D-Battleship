@@ -1,4 +1,5 @@
 using System;
+using Ships;
 using Unity.Services.Authentication;
 using Unity.Services.Core;
 using Unity.Services.Multiplayer;
@@ -13,14 +14,22 @@ namespace Network
         [SerializeField] private VisualTreeAsset uxmlReadyUp;
         private ISession _session;
         private IHostSession _host;
-        private readonly PlayerProperty _notReady = new PlayerProperty("false");
-        private readonly PlayerProperty _ready = new PlayerProperty("true");
-        private readonly SessionProperty _allReady = new SessionProperty("true");
+        private readonly PlayerProperty _notReady = new("false");
+        private readonly PlayerProperty _ready = new("true");
+        private readonly SessionProperty _allReady = new("true");
+        private readonly SessionProperty _modePlacing = new("placing");
         private const string ReadyName = "ready";
         private const string AllReadyName = "allReady";
+        private const string ModeName = "mode";
         private const string GameScene = "Game";
         private EventCallback<ChangeEvent<bool>> _readyCallback;
-        
+        private bool _loaded = false;
+
+        private void Awake()
+        {
+            DontDestroyOnLoad(gameObject);
+        }
+
         private async void Start()
         {
             try
@@ -41,14 +50,15 @@ namespace Network
         {
             if (!_session.Properties.TryGetValue(AllReadyName, out SessionProperty sVal) ||
                 sVal.Value != _allReady.Value || _session.PlayerCount != 2) return;
-            LoadGame();
+
+            if (!_loaded) LoadGame();
         }
-        
+
         private void OnSessionAdded(ISession session)
         {
             uxmlReadyUp.CloneTree(uiDoc.rootVisualElement);
             _session = session;
-            
+
             // toggle
             VisualElement toggle = uiDoc.rootVisualElement.Q<Toggle>("Toggle");
             if (toggle != null)
@@ -59,10 +69,10 @@ namespace Network
 
             _session.Changed += OnSessionChanged;
             SendReady(false);
-            
+
             if (!session.IsHost) return;
-            
-            _host = _session.AsHost(); 
+
+            _host = _session.AsHost();
             _session.PlayerPropertiesChanged += OnPlayerPropertiesChanged;
         }
 
@@ -81,32 +91,38 @@ namespace Network
         private bool AllPlayersReady()
         {
             bool allReady = true;
-            
+
             if (_session.PlayerCount != 2) return false;
-            
+
             foreach (IReadOnlyPlayer p in _session.Players)
             {
-                if (!p.Properties.TryGetValue(ReadyName, out PlayerProperty pVal) ||
-                    pVal.Value != "true")
-                {
-                    allReady = false;
-                    break;
-                }
+                if (p.Properties.TryGetValue(ReadyName, out PlayerProperty pVal) &&
+                    pVal.Value == "true") continue;
+                allReady = false;
+                break;
             }
 
             return allReady;
         }
 
+        private string CurrentMode()
+        {
+            _session.Properties.TryGetValue(ModeName, out SessionProperty sVal);
+            return sVal != null ? sVal.ToString() : string.Empty;
+        }
+
+        // HOST
         private void OnPlayerPropertiesChanged()
         {
             if (_host == null) return;
 
             if (!AllPlayersReady()) return;
-            
-            StartGame();
+
+            if (CurrentMode() == string.Empty) StartGame();
             // LoadGame();
         }
 
+        // CLIENT
         private async void SendReady(bool status)
         {
             try
@@ -120,11 +136,13 @@ namespace Network
             }
         }
 
+        // HOST
         private async void StartGame()
         {
             try
             {
                 _host.SetProperty(AllReadyName, new SessionProperty("true"));
+                _host.SetProperty(ModeName, _modePlacing);
                 await _host.SavePropertiesAsync();
             }
             catch (Exception e)
@@ -133,9 +151,27 @@ namespace Network
             }
         }
 
-        private static void LoadGame()
+        private void LoadGame()
         {
             UnityEngine.SceneManagement.SceneManager.LoadScene(GameScene);
+            _loaded = true;
+        }
+
+        // CLIENT
+        public async void PlaceShip(int shipType, int number, ShipView ship)
+        {
+            try
+            {
+                Axis axis = ship.GetAxes().GetAxis();
+                Vector3 pos = ship.transform.position;
+                string value = $"{pos.x},{pos.y},{pos.z}/{axis}";
+                _session.CurrentPlayer.SetProperty($"{shipType};{number}", new PlayerProperty(value));
+                await _session.SaveCurrentPlayerDataAsync();
+            }
+            catch (Exception e)
+            {
+                Debug.LogException(e);
+            }
         }
     }
 }
