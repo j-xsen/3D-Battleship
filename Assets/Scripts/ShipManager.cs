@@ -2,7 +2,6 @@ using Ships;
 using System;
 using System.Collections;
 using System.Collections.Generic;
-using System.Linq;
 using Network;
 using Ships.Types;
 using UI;
@@ -10,51 +9,55 @@ using UnityEngine;
 using UnityEngine.EventSystems;
 using UnityEngine.InputSystem;
 using UnityEngine.Serialization;
+using UnityEngine.UIElements;
 
 public class ShipManager : MonoBehaviour
 {
     [FormerlySerializedAs("_spaceBuilder")]
     [SerializeField] private SpaceBuilder spaceBuilder;
 
-    [Header("Ghost Materials")] [SerializeField]
-    private Material ghostValid;
+    [Header("Ghost Materials")]
+    [SerializeField] private Material ghostValid;
     [SerializeField] private Material ghostInvalid;
-    
+
     [Header("cam")]
     [SerializeField] private GameObject cam;
 
-    [SerializeField] private bool isActiveBoard = true; //checks if this board is active 
+    [Header("UI Toolkit")]
+    [SerializeField] private UIDocument uiDoc;
+    [SerializeField] private VisualTreeAsset shipPlaceButton;
 
-    
+    [SerializeField] private bool placementLocked = false; // bool check to lock placement when all ships are placed
+    [SerializeField] private bool isActiveBoard = true; // checks if this board is active
 
-    [SerializeField] private bool placementLocked = false; // bool check to lock placement when all ships are placed 
-
-    private bool CanEditShips()//extra check 
+    private bool CanEditShips() // extra check
     {
         return isActiveBoard && !placementLocked;
     }
 
-    private TMP_Text[] texts;
     private enum ShipTypes
     {
-        Two,
-        Three,
-        Four,
-        Five
+        Two = 0,
+        Three = 1,
+        Four = 2,
+        Five = 3
     }
-
-    // these store the smallest and biggest ship from ShipTypes
-    private const ShipTypes MinShip = ShipTypes.Two;
-    private const ShipTypes MaxShip = ShipTypes.Five;
-    // private TMP_Text[] texts;
 
     private ShipView _ghost;
     private ShipTypeManager _shipTypeManager;
 
     private int _selectedShip; // the current "ghost" ship
     private bool _placing; // this is a config bool to toggle updating the ghost
-    private ShipPlacementUI _placementUI;
-    private Dictionary<int, List<ShipView>> _shipObjects; // a list of all ship game objects to keep count
+
+    // currently defined in Start(), is the number of ships allowed
+    private Dictionary<int, int> _shipRations;
+
+    // ship button UI
+    private Dictionary<int, Button> _shipButtons;
+    private Dictionary<int, Label> _shipText;
+
+    // a list of all ship game objects to keep count
+    private Dictionary<int, List<ShipView>> _shipObjects;
 
     // inputs
     private InputAction _placeShip;
@@ -65,27 +68,31 @@ public class ShipManager : MonoBehaviour
     private Action<InputAction.CallbackContext> _onRotateShip;
     private InputAction _rotateShipLeft;
 
-    //for setting collision detections
-    private Vector3 bcollider;
-    private Vector3 ccollider;
-    //check how many total are left
-    //private int _shipcount = 0;
+    // for setting collision detections
     private Vector3 _bCollider;
     private Vector3 _cCollider;
-    //prevent overlap
+
+    // prevent overlap
     public LayerMask overlap;
-    //making a number to add onto names
+
+    // making a number to add onto names
     private int _index;
-    
+
     // network
     private SessionManager _network;
+
+    private bool free = true;
 
     private void Start()
     {
         // find network
-        _network = GameObject.FindWithTag("NetworkManager").GetComponent<SessionManager>();
-        if(!_network) Debug.LogError("Unable to find NetworkManager!");
-        
+        //_network = GameObject.FindWithTag("NetworkManager")?.GetComponent<SessionManager>();
+        //if (!_network) Debug.LogError("Unable to find NetworkManager!");
+
+        // get ship type manager
+        _shipTypeManager = GetComponent<ShipTypeManager>();
+        if (!_shipTypeManager) Debug.LogError("No ShipTypeManager found on ShipManager");
+
         // hover events
         HoverActions.current.Clicked += PlaceShip;
         HoverActions.current.ShipClicked += Redo;
@@ -93,49 +100,44 @@ public class ShipManager : MonoBehaviour
         // input setup
         _placeShip = InputSystem.actions.FindAction("SpaceField/ShipPlace");
         _onPlaceShip = _ => PlaceShip();
-        _placeShip.performed += _onPlaceShip;
+        if (_placeShip != null) _placeShip.performed += _onPlaceShip;
+
         _cycleShip = InputSystem.actions.FindAction("SpaceField/ShipCycle");
         _onCycleShip = _ => CycleShip();
-        _cycleShip.performed += _onCycleShip;
+        if (_cycleShip != null) _cycleShip.performed += _onCycleShip;
+
         _rotateShipRight = InputSystem.actions.FindAction("SpaceField/ShipRotateRight");
         _onRotateShip = _ => RotateShip();
-        _rotateShipRight.performed += _onRotateShip;
-        _rotateShipLeft = InputSystem.actions.FindAction("SpaceField/ShipRotateLeft");
-        _rotateShipLeft.performed += _onRotateShip;
+        if (_rotateShipRight != null) _rotateShipRight.performed += _onRotateShip;
 
-        // TODO: Get game settings from server?
+        _rotateShipLeft = InputSystem.actions.FindAction("SpaceField/ShipRotateLeft");
+        if (_rotateShipLeft != null) _rotateShipLeft.performed += _onRotateShip;
 
         // maximum number
-        _shipRations = new Dictionary<ShipTypes, int>
+        _shipRations = new Dictionary<int, int>
         {
-            [ShipTypes.Two] = 1,
-            [ShipTypes.Three] = 1,
-            [ShipTypes.Four] = 1,
-            [ShipTypes.Five] = 1
+            [(int)ShipTypes.Two] = 1,
+            [(int)ShipTypes.Three] = 1,
+            [(int)ShipTypes.Four] = 1,
+            [(int)ShipTypes.Five] = 1
         };
 
-        //set up starting UI with number of available ships
-        texts[0].text = (_shipRations[ShipTypes.Two]) + "";
-        texts[1].text = (_shipRations[ShipTypes.Three]) + "";
-        texts[2].text = (_shipRations[ShipTypes.Four]) + "";
-        texts[3].text = (_shipRations[ShipTypes.Five]) + "";
-
-        // get PlacementUI, which should be attached with this object
-        _placementUI = GetComponentInParent<ShipPlacementUI>();
-        if (!_placementUI) Debug.LogError("No ShipPlacementUI found with ShipManager");
-
         // init ship objects dict as empty dynamic lists
-        _shipObjects = new Dictionary<ShipTypes, List<ShipView>>();
-        foreach (ShipTypes shipType in _shipRations.Keys)
+        _shipObjects = new Dictionary<int, List<ShipView>>();
+        _shipButtons = new Dictionary<int, Button>();
+        _shipText = new Dictionary<int, Label>();
+
+        foreach (int shipType in _shipRations.Keys)
         {
             _shipObjects[shipType] = new List<ShipView>();
         }
 
-        _placing = true; // config
-        _selectedShip = _shipTypeManager.MinShip(); // defaults ghost ship to the smallest ship
+        // create button ui
+        BuildShipButtons();
 
-        // used to access config (i.e. field size) & cursor event
-        //_spaceBuilder = GetComponent<SpaceBuilder>();
+        _placing = true; // config
+        _selectedShip = _shipTypeManager != null ? _shipTypeManager.MinShip() : 0; // defaults ghost ship to the smallest ship
+
         if (!spaceBuilder)
         {
             Debug.LogError("No SpaceBuilder found on ShipManager!");
@@ -144,33 +146,75 @@ public class ShipManager : MonoBehaviour
 
         spaceBuilder.OnCursorMoved += HandleCursorMoved; // gets called every time the cursor moves
         HandleCursorMoved(); // creates ghost on start
+
+        UpdateButtons();
     }
 
-    /* public void Protect()
-     {
-         for (int i = 0; i < _shipObjects.Count; i++)
-         {
-             ChosenShip(i);
-             foreach (var ship in _shipObjects[_selectedShip])
-             {
-                 ship.transform.parent = null;
-                 DontDestroyOnLoad(ship);
-             }
-         }
-     }*/
-
-    private void Redo(GameObject Ship)
+    private void BuildShipButtons()
     {
-        if (!CanEditShips()) return;
+        if (uiDoc == null || shipPlaceButton == null)
+        {
+            Debug.LogWarning("UI Toolkit references missing on ShipManager.");
+            return;
+        }
 
-        ChosenShip(Ship.GetComponent<LineShipView>().shipLength - 2);
+        VisualElement root = uiDoc.rootVisualElement;
+        if (root == null) return;
 
-        ShipView shipView = Ship.GetComponent<ShipView>();
+        VisualElement container = new VisualElement
+        {
+            pickingMode = PickingMode.Ignore
+        };
+
+        container.style.position = Position.Absolute;
+        container.style.top = 0;
+        container.style.bottom = 0;
+        container.style.right = 0;
+        container.style.justifyContent = Justify.Center;
+        container.style.alignItems = Align.FlexEnd;
+        container.style.paddingRight = 32;
+
+        root.Add(container);
+
+        foreach (KeyValuePair<int, int> pair in _shipRations)
+        {
+            int shipType = pair.Key;
+            int count = pair.Value;
+
+            VisualElement shipButtonElement = shipPlaceButton.Instantiate();
+            shipButtonElement.pickingMode = PickingMode.Ignore;
+            shipButtonElement.name = ((ShipTypes)shipType).ToString();
+
+            Label shipSelectLabel = shipButtonElement.Q<Label>("Remaining");
+            if (shipSelectLabel != null)
+            {
+                shipSelectLabel.text = count.ToString();
+                _shipText[shipType] = shipSelectLabel;
+            }
+
+            Button selectButton = shipButtonElement.Q<Button>("Select");
+            if (selectButton != null)
+            {
+                int localShipType = shipType;
+                selectButton.clicked += () => SelectShip(localShipType);
+                selectButton.style.height = 50 + (25 * shipType);
+                _shipButtons[shipType] = selectButton;
+            }
+
+            container.Add(shipButtonElement);
+        }
+    }
+
+    private void Redo(GameObject ship)
+    {
+        if (!CanEditShips()) return; // prevents removal after player has locked ships
+
+        ShipView shipView = ship.GetComponent<ShipView>();
 
         if (shipView != null && _shipObjects[_selectedShip].Remove(shipView))
         {
-            Destroy(Ship);
-            texts[(int)_selectedShip].text = SelectedRemaining() + "";
+            Destroy(ship);
+            UpdateButtons();
             return;
         }
 
@@ -185,24 +229,37 @@ public class ShipManager : MonoBehaviour
         if (_cycleShip != null) _cycleShip.performed -= _onCycleShip;
         if (_rotateShipRight != null) _rotateShipRight.performed -= _onRotateShip;
         if (_rotateShipLeft != null) _rotateShipLeft.performed -= _onRotateShip;
-        HoverActions.current.Clicked -= PlaceShip;
-        HoverActions.current.ShipClicked -= Redo;
+
+        if (HoverActions.current != null)
+        {
+            HoverActions.current.Clicked -= PlaceShip;
+            HoverActions.current.ShipClicked -= Redo;
+        }
+    }
+
+    private void UpdateButtons()
+    {
+        foreach (KeyValuePair<int, Button> pair in _shipButtons)
+        {
+            int shipType = pair.Key;
+            int startingRation = _shipRations[shipType];
+            int numberPlaced = _shipObjects[shipType].Count;
+            int remaining = startingRation - numberPlaced;
+
+            pair.Value.SetEnabled(remaining > 0);
+
+            if (_shipText.TryGetValue(shipType, out Label label))
+            {
+                label.text = remaining.ToString();
+            }
+        }
     }
 
     private int SelectedRemaining()
     {
         // returns the number of selected ships remaining
         int startingRation = _shipRations[_selectedShip];
-        int numberPlaced = _shipObjects[_selectedShip].Count();
-
-        if (startingRation - numberPlaced == 0)
-        {
-            texts[(int)_selectedShip].gameObject.transform.parent.GetComponent<Button>().interactable = false;
-        }
-        else
-        {
-            texts[(int)_selectedShip].gameObject.transform.parent.GetComponent<Button>().interactable = true;
-        }
+        int numberPlaced = _shipObjects[_selectedShip].Count;
         return startingRation - numberPlaced;
     }
 
@@ -210,6 +267,7 @@ public class ShipManager : MonoBehaviour
     {
         // TODO - don't allow placing on top of another ship
         return SelectedRemaining() > 0 && // check if ship size available
+               _ghost != null &&
                _ghost.HasValidPlacement(spaceBuilder.GetSize());
     }
 
@@ -243,7 +301,7 @@ public class ShipManager : MonoBehaviour
 
     public int ShipsPlaced(int shipType)
     {
-        return _shipObjects[shipType].Count(ship => ship);
+        return _shipObjects[shipType].Count;
     }
 
     private void CycleShip()
@@ -277,7 +335,6 @@ public class ShipManager : MonoBehaviour
     private void HandleCursorMoved()
     {
         if (!CanEditShips()) return;
-
         if (!_placing) return;
 
         if (_ghost)
@@ -293,16 +350,15 @@ public class ShipManager : MonoBehaviour
         }
     }
 
-    private bool free = true;
-
     private void Update()
     {
-        if ((Mouse.current.rightButton.isPressed) & (free))
+        if ((Mouse.current.rightButton.isPressed) & free)
         {
             RotateShip();
             free = false;
             StartCoroutine(Delay(0.5f));
         }
+
         if (CanEditShips() && Mouse.current.scroll.ReadValue().y != 0)
         {
             ReinstantiateGhost();
@@ -312,18 +368,21 @@ public class ShipManager : MonoBehaviour
     public void ChangeMode()
     {
         PhysicsRaycaster mode = cam.GetComponent<PhysicsRaycaster>();
-        //check if default layer is active
+
+        // check if default layer is active
         if ((mode.eventMask & (1 << 0)) != 0)
         {
-            //set all layers to mask
+            // set all layers to mask
             mode.eventMask = ~0 & ~(LayerMask.GetMask("Default")) & ~(LayerMask.GetMask("Blocked"));
-            _ghost.GetComponentInChildren<MeshRenderer>().enabled = false;
+            if (_ghost != null)
+                _ghost.GetComponentInChildren<MeshRenderer>().enabled = false;
             HandleCursorMoved();
         }
         else
         {
             mode.eventMask = ~0 & ~(LayerMask.GetMask("Ship")) & ~(LayerMask.GetMask("Blocked"));
-            _ghost.GetComponentInChildren<MeshRenderer>().enabled = true;
+            if (_ghost != null)
+                _ghost.GetComponentInChildren<MeshRenderer>().enabled = true;
         }
     }
 
@@ -335,52 +394,40 @@ public class ShipManager : MonoBehaviour
 
     private void PlaceShip()
     {
-        if (!CanEditShips()) return;//checks if valid to place ships 
-
-        // places a ship where the ghost ship is
-
+        if (!CanEditShips()) return; // checks if valid to place ships
         if (!GhostValid()) return; // ghost ship required
-
-        if (SelectedRemaining() == 0) return; // check if ship available.
+        if (SelectedRemaining() == 0) return; // check if ship available
 
         int len = _ghost.GetComponent<LineShipView>().shipLength;
         _cCollider = _ghost.transform.position;
 
-        //determine the direction for the collider check
+        // determine the direction for the collider check
         if (Mathf.Approximately(_ghost.transform.rotation.eulerAngles.y, 90))
         {
             _bCollider = new Vector3(1, 1, len);
             _cCollider.z += (float)((len - 1) * .5);
-            //  Debug.Log("up " + _ghost.transform.rotation.eulerAngles.y);
         }
         else if (Mathf.Approximately(_ghost.transform.rotation.eulerAngles.z, 90))
         {
             _bCollider = new Vector3(1, len, 1);
             _cCollider.y += (float)((len - 1) * .5);
-            // Debug.Log("right" + _ghost.transform.rotation.eulerAngles.z);
         }
         else
         {
             _bCollider = new Vector3(len, 1, 1);
             _cCollider.x += (float)((len - 1) * .5);
-            // Debug.Log("normal z: " + _ghost.transform.rotation.eulerAngles.z + " y: " + _ghost.transform.rotation.eulerAngles.y);
         }
 
-        //the overlap box needs to have dimensions half that of the original, or it will be too large
-        Vector3 correct = _bCollider / 3;
+        // the overlap box needs to have dimensions half that of the original, or it will be too large
+        Vector3 correct = _bCollider / 3f;
         Collider[] hit = Physics.OverlapBox(_cCollider, correct, Quaternion.identity, overlap);
-        foreach (Collider found in hit)
-        {
-            Debug.Log("colliders: " + found);
-        }
 
-        //if there are colliders of ships already there, abort
+        // if there are colliders of ships already there, abort
         if (hit.Length > 0)
         {
             return;
         }
-            
-        
+
         ShipView newShip = Instantiate(
             ObjectFromSelected(),
             _ghost.transform.position,
@@ -390,36 +437,23 @@ public class ShipManager : MonoBehaviour
 
         _shipObjects[_selectedShip].Add(newShip);
 
-
-        //Debug.Log("index 2: " + (_shipRations[_selectedShip] - SelectedRemaining()));
-
-        Debug.Log("number placed: " + ((_shipRations[_selectedShip] - SelectedRemaining()) - 1));
-        //GameObject collider_object = _shipObjects[_selectedShip][(_shipRations[_selectedShip] - SelectedRemaining()) - 1].gameObject;
-        GameObject collider_object = newShip.gameObject;
-
-        collider_object.layer = LayerMask.NameToLayer("Ship");
-        collider_object.transform.GetChild(0).gameObject.layer = LayerMask.NameToLayer("Ship");
-        collider_object.name = collider_object.name + " " + _index;
-        _index = _index + 1;
-      //  Debug.Log("listed ship name: " + _shipObjects[_selectedShip][(_shipRations[_selectedShip] - SelectedRemaining()) - 1].gameObject.name);
-
-
-        //Debug.Log("index 2: " + (_shipRations[_selectedShip] - SelectedRemaining()));
-        Debug.Log("number placed: " + index);
-        GameObject colliderObject =
-            _shipObjects[_selectedShip][index].gameObject;
+        GameObject colliderObject = newShip.gameObject;
         colliderObject.layer = LayerMask.NameToLayer("Ship");
-        colliderObject.transform.GetChild(0).gameObject.layer = LayerMask.NameToLayer("Ship");
-        colliderObject.name = colliderObject.name + " " + _index;
-        _index += 1;
-        //  Debug.Log("listed ship name: " + _shipObjects[_selectedShip][(_shipRations[_selectedShip] - SelectedRemaining()) - 1].gameObject.name);
-        
-        _network.PlaceShip(_selectedShip, ShipsPlaced(_selectedShip), _ghost);
-        //  _shipObjects[_selectedShip][(_shipRations[_selectedShip] - SelectedRemaining()) - 1].gameObject.GetComponent<LineShipView>().index = (_shipRations[_selectedShip] - SelectedRemaining()) - 1;
 
-        //update UI
-        // texts[(int)_selectedShip].text = SelectedRemaining() + "";
-        _placementUI.UpdateButtons();
+        if (colliderObject.transform.childCount > 0)
+            colliderObject.transform.GetChild(0).gameObject.layer = LayerMask.NameToLayer("Ship");
+
+        colliderObject.name = colliderObject.name + " " + _index;
+        _index++;
+
+        // send placement to server
+        if (_network != null)
+        {
+            _network.PlaceShip(_selectedShip, ShipsPlaced(_selectedShip), newShip);
+        }
+
+        // update UI
+        UpdateButtons();
 
         HandleCursorMoved(); // checks if out of ships
     }
@@ -433,30 +467,27 @@ public class ShipManager : MonoBehaviour
     void OnDrawGizmos()
     {
         Gizmos.color = Color.red;
+
         // Check that it is being run in Play Mode, so it doesn't try to draw this in Editor mode
         if (Application.isPlaying)
-            // Draw a cube where the OverlapBox is (positioned where your GameObject is as well as a size)
+            // Draw a cube where the OverlapBox is
             Gizmos.DrawWireCube(_cCollider, _bCollider);
     }
-
 
     public void SetActiveBoard(bool active)
     {
         isActiveBoard = active;
     }
 
-
-
-
-    public bool AllShipsPlaced() //iterates through the dict and assignes vairables based on how many ships are allowed and compares to how many are placed 
+    public bool AllShipsPlaced() // iterates through the dict and compares how many ships are allowed to how many are placed
     {
-        foreach (var pair in _shipRations)
+        foreach (KeyValuePair<int, int> pair in _shipRations)
         {
-            ShipTypes type = pair.Key;
+            int shipType = pair.Key;
             int allowed = pair.Value;
-            int placed = _shipObjects[type].Count;
+            int placed = _shipObjects[shipType].Count;
 
-            Debug.Log($"{gameObject.name} | {type}: placed {placed} / required {allowed}");
+            Debug.Log($"{gameObject.name} | {(ShipTypes)shipType}: placed {placed} / required {allowed}");
 
             if (placed < allowed)
                 return false;
@@ -465,7 +496,7 @@ public class ShipManager : MonoBehaviour
         return true;
     }
 
-    public void LockPlacement() //changes bool type to true and checks if a ghost object is still present and if so destroys it 
+    public void LockPlacement() // changes bool type to true and checks if a ghost object is still present and if so destroys it
     {
         placementLocked = true;
 
@@ -476,7 +507,7 @@ public class ShipManager : MonoBehaviour
         }
     }
 
-    public void TryLockPlacement() //holder function that checks if all ships are placed for that player then activates lock 
+    public void TryLockPlacement() // holder function that checks if all ships are placed for that player then activates lock
     {
         if (!AllShipsPlaced())
         {
@@ -486,5 +517,4 @@ public class ShipManager : MonoBehaviour
 
         LockPlacement();
     }
-
 }

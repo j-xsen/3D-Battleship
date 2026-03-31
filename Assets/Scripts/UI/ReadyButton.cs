@@ -18,7 +18,7 @@ namespace UI
         void Start()
         {
             button = GetComponent<Button>();
-            button.interactable = false;
+            button.interactable = true;
             // current = this;
         }
 
