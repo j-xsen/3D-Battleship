@@ -1,0 +1,6 @@
+<ui:UXML xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:ui="UnityEngine.UIElements" xmlns:uie="UnityEditor.UIElements" noNamespaceSchemaLocation="../UIElementsSchema/UIElements.xsd" editor-extension-mode="False">
+    <ui:VisualElement picking-mode="Ignore" style="flex-direction: row; align-content: auto; align-self: auto; justify-content: flex-end; align-items: center; right: 0; position: relative; overflow: visible; margin-top: 10px; margin-right: 0; margin-bottom: 10px;">
+        <ui:Label text="0" name="Remaining" picking-mode="Ignore" style="color: rgb(255, 255, 255); align-content: center;"/>
+        <ui:Button text="" name="Select" style="overflow: visible;"/>
+    </ui:VisualElement>
+</ui:UXML>

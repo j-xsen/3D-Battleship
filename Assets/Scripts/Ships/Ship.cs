@@ -12,7 +12,7 @@ namespace Ships
     
     public abstract class Ship
     {
-        public abstract bool HasValidPlacement(int fieldSize);
+        public abstract bool HasValidPlacement(Vector3 size);
         public void Rotate(Transform transform)
         {
             _axes.TransformFrom(transform);
@@ -58,6 +58,11 @@ namespace Ships
                 Axis.Y => Axes.X,
                 _ => throw new ArgumentOutOfRangeException()
             };
+        }
+
+        public Vector3 GetPos()
+        {
+            return new Vector3(X, Y, Z);
         }
     }
 }

@@ -3,33 +3,29 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
-using System.Runtime.CompilerServices;
-using TMPro;
-using Unity.VisualScripting;
+using Network;
+using Ships.Types;
+using UI;
 using UnityEngine;
 using UnityEngine.EventSystems;
 using UnityEngine.InputSystem;
-using UnityEngine.UI;
+using UnityEngine.Serialization;
 
 public class ShipManager : MonoBehaviour
 {
-    [SerializeField] private SpaceBuilder _spaceBuilder;
+    [FormerlySerializedAs("_spaceBuilder")]
+    [SerializeField] private SpaceBuilder spaceBuilder;
 
-    [SerializeField] private LineShipView[] lineShipPrefabs;
-
-    [Header("Ghost Materials")]
-    [SerializeField] private Material ghostValid;
+    [Header("Ghost Materials")] [SerializeField]
+    private Material ghostValid;
     [SerializeField] private Material ghostInvalid;
-    [Header("buttons")]
-    [SerializeField] private Button buttonOne;
-    [SerializeField] private Button buttonTwo;
-    [SerializeField] private Button buttonThree;
-    [SerializeField] private Button buttonFour;
+    
     [Header("cam")]
     [SerializeField] private GameObject cam;
 
+    [SerializeField] private bool isActiveBoard = true; //checks if this board is active 
 
-    [SerializeField] private bool isActiveBoard = true;//checks if this board is active 
+    
 
     [SerializeField] private bool placementLocked = false; // bool check to lock placement when all ships are placed 
 
@@ -50,16 +46,15 @@ public class ShipManager : MonoBehaviour
     // these store the smallest and biggest ship from ShipTypes
     private const ShipTypes MinShip = ShipTypes.Two;
     private const ShipTypes MaxShip = ShipTypes.Five;
+    // private TMP_Text[] texts;
 
     private ShipView _ghost;
+    private ShipTypeManager _shipTypeManager;
 
-    private ShipTypes _selectedShip; // the current "ghost" ship
+    private int _selectedShip; // the current "ghost" ship
     private bool _placing; // this is a config bool to toggle updating the ghost
-    //private SpaceBuilder _spaceBuilder;
-    private Dictionary<ShipTypes, int> _shipRations; // currently defined in Start(), is the number of ships allowed
-    private Dictionary<ShipTypes, List<ShipView>> _shipObjects; // a list of all ship game objects to keep count
-
-
+    private ShipPlacementUI _placementUI;
+    private Dictionary<int, List<ShipView>> _shipObjects; // a list of all ship game objects to keep count
 
     // inputs
     private InputAction _placeShip;
@@ -70,21 +65,31 @@ public class ShipManager : MonoBehaviour
     private Action<InputAction.CallbackContext> _onRotateShip;
     private InputAction _rotateShipLeft;
 
-
     //for setting collision detections
     private Vector3 bcollider;
     private Vector3 ccollider;
     //check how many total are left
     //private int _shipcount = 0;
+    private Vector3 _bCollider;
+    private Vector3 _cCollider;
     //prevent overlap
     public LayerMask overlap;
     //making a number to add onto names
-    private int _index = 0;
+    private int _index;
+    
+    // network
+    private SessionManager _network;
+
     private void Start()
     {
-        hover.current.Clicked += PlaceShip;
-        hover.current.Shipclick += Redo;
-        texts = new TMP_Text[] { buttonOne.gameObject.GetComponentInChildren<TMP_Text>(), buttonTwo.gameObject.GetComponentInChildren<TMP_Text>(), buttonThree.gameObject.GetComponentInChildren<TMP_Text>(), buttonFour.gameObject.GetComponentInChildren<TMP_Text>() };
+        // find network
+        _network = GameObject.FindWithTag("NetworkManager").GetComponent<SessionManager>();
+        if(!_network) Debug.LogError("Unable to find NetworkManager!");
+        
+        // hover events
+        HoverActions.current.Clicked += PlaceShip;
+        HoverActions.current.ShipClicked += Redo;
+
         // input setup
         _placeShip = InputSystem.actions.FindAction("SpaceField/ShipPlace");
         _onPlaceShip = _ => PlaceShip();
@@ -115,6 +120,9 @@ public class ShipManager : MonoBehaviour
         texts[2].text = (_shipRations[ShipTypes.Four]) + "";
         texts[3].text = (_shipRations[ShipTypes.Five]) + "";
 
+        // get PlacementUI, which should be attached with this object
+        _placementUI = GetComponentInParent<ShipPlacementUI>();
+        if (!_placementUI) Debug.LogError("No ShipPlacementUI found with ShipManager");
 
         // init ship objects dict as empty dynamic lists
         _shipObjects = new Dictionary<ShipTypes, List<ShipView>>();
@@ -124,41 +132,18 @@ public class ShipManager : MonoBehaviour
         }
 
         _placing = true; // config
-        _selectedShip = ShipTypes.Two; // defaults ghost ship to the two wide ship
+        _selectedShip = _shipTypeManager.MinShip(); // defaults ghost ship to the smallest ship
 
         // used to access config (i.e. field size) & cursor event
         //_spaceBuilder = GetComponent<SpaceBuilder>();
-        if (!_spaceBuilder)
+        if (!spaceBuilder)
         {
             Debug.LogError("No SpaceBuilder found on ShipManager!");
             return;
         }
 
-        _spaceBuilder.OnCursorMoved += HandleCursorMoved; // gets called every time the cursor moves
+        spaceBuilder.OnCursorMoved += HandleCursorMoved; // gets called every time the cursor moves
         HandleCursorMoved(); // creates ghost on start
-
-        //set up UI Buttons to have listeners
-        buttonOne.onClick.AddListener(() =>
-        {
-            ChosenShip(0);
-            ReinstantiateGhost();
-        });
-        buttonTwo.onClick.AddListener(() =>
-        {
-            ChosenShip(1);
-            ReinstantiateGhost();
-        });
-        buttonThree.onClick.AddListener(() =>
-        {
-            ChosenShip(2);
-            ReinstantiateGhost();
-        });
-        buttonFour.onClick.AddListener(() =>
-        {
-            ChosenShip(3);
-            ReinstantiateGhost();
-        });
-
     }
 
     /* public void Protect()
@@ -191,16 +176,17 @@ public class ShipManager : MonoBehaviour
 
         Debug.Log("couldn't find ship");
     }
+
     private void OnDestroy()
     {
         // unload input function
-        if (_spaceBuilder) _spaceBuilder.OnCursorMoved -= HandleCursorMoved;
+        if (spaceBuilder) spaceBuilder.OnCursorMoved -= HandleCursorMoved;
         if (_placeShip != null) _placeShip.performed -= _onPlaceShip;
         if (_cycleShip != null) _cycleShip.performed -= _onCycleShip;
         if (_rotateShipRight != null) _rotateShipRight.performed -= _onRotateShip;
         if (_rotateShipLeft != null) _rotateShipLeft.performed -= _onRotateShip;
-        hover.current.Clicked -= PlaceShip;
-        hover.current.Shipclick -= Redo;
+        HoverActions.current.Clicked -= PlaceShip;
+        HoverActions.current.ShipClicked -= Redo;
     }
 
     private int SelectedRemaining()
@@ -223,14 +209,14 @@ public class ShipManager : MonoBehaviour
     private bool GhostValid()
     {
         // TODO - don't allow placing on top of another ship
-        if (SelectedRemaining() <= 0) return false; // check if ship size available
-        return _ghost.HasValidPlacement(_spaceBuilder.GetSize());
+        return SelectedRemaining() > 0 && // check if ship size available
+               _ghost.HasValidPlacement(spaceBuilder.GetSize());
     }
 
     private Vector3 TransformedPoint()
     {
         // gets the world positioning of the cursor for placement alignment
-        return _spaceBuilder.transform.TransformPoint(_spaceBuilder.GetCursorLocation());
+        return spaceBuilder.transform.TransformPoint(spaceBuilder.GetCursorLocation());
     }
 
     private Material GetMaterial()
@@ -248,32 +234,16 @@ public class ShipManager : MonoBehaviour
         _ghost.SetMaterial(GetMaterial());
     }
 
-    private void ChosenShip(int clicked)
+    public void SelectShip(int clicked)
     {
-        switch (clicked)
-        {
-            case 0:
-                {
-                    _selectedShip = ShipTypes.Two;
-                    break;
-                }
-            case 1:
-                {
-                    _selectedShip = ShipTypes.Three;
-                    break;
-                }
-            case 2:
-                {
-                    _selectedShip = ShipTypes.Four;
-                    break;
-                }
-            case 3:
-                {
-                    _selectedShip = ShipTypes.Five;
-                    break;
-                }
-        }
-        //ReinstantiateGhost();
+        Debug.Log($"SelectShip called with {clicked}");
+        _selectedShip = clicked;
+        ReinstantiateGhost();
+    }
+
+    public int ShipsPlaced(int shipType)
+    {
+        return _shipObjects[shipType].Count(ship => ship);
     }
 
     private void CycleShip()
@@ -281,8 +251,7 @@ public class ShipManager : MonoBehaviour
         if (!CanEditShips()) return;
 
         // called to cycle through ship types
-        _selectedShip += 1;
-        if (_selectedShip.CompareTo(MaxShip) > 0) _selectedShip = MinShip; // reset to min ship when bigger than max
+        _selectedShip = _shipTypeManager.CycleShip(_selectedShip);
         ReinstantiateGhost();
     }
 
@@ -301,7 +270,7 @@ public class ShipManager : MonoBehaviour
         // remakes ghost with the transform info & parents to self
         _ghost = Instantiate(ObjectFromSelected(), newPos, newRot, transform);
         _ghost.SetAxes(savedAxes);
-        _ghost.MoveShip(newPos, _spaceBuilder.GetCursorLocation());
+        _ghost.MoveShip(newPos, spaceBuilder.GetCursorLocation());
         _ghost.SetMaterial(GetMaterial());
     }
 
@@ -314,7 +283,7 @@ public class ShipManager : MonoBehaviour
         if (_ghost)
         {
             // ghost exists, just update pos and material
-            _ghost.MoveShip(TransformedPoint(), _spaceBuilder.GetCursorLocation());
+            _ghost.MoveShip(TransformedPoint(), spaceBuilder.GetCursorLocation());
             _ghost.SetMaterial(GetMaterial());
         }
         else
@@ -323,6 +292,7 @@ public class ShipManager : MonoBehaviour
             ReinstantiateGhost();
         }
     }
+
     private bool free = true;
 
     private void Update()
@@ -337,9 +307,7 @@ public class ShipManager : MonoBehaviour
         {
             ReinstantiateGhost();
         }
-
     }
-
 
     public void ChangeMode()
     {
@@ -358,11 +326,13 @@ public class ShipManager : MonoBehaviour
             _ghost.GetComponentInChildren<MeshRenderer>().enabled = true;
         }
     }
+
     IEnumerator Delay(float wait)
     {
         yield return new WaitForSeconds(wait);
         free = true;
     }
+
     private void PlaceShip()
     {
         if (!CanEditShips()) return;//checks if valid to place ships 
@@ -370,36 +340,35 @@ public class ShipManager : MonoBehaviour
         // places a ship where the ghost ship is
 
         if (!GhostValid()) return; // ghost ship required
-       // Debug.Log("Valid");
 
         if (SelectedRemaining() == 0) return; // check if ship available.
-                                              //  Debug.Log("Not Enough");
+
         int len = _ghost.GetComponent<LineShipView>().shipLength;
-        ccollider = _ghost.transform.position;
+        _cCollider = _ghost.transform.position;
 
         //determine the direction for the collider check
-        if ( _ghost.transform.rotation.eulerAngles.y == 90)
+        if (Mathf.Approximately(_ghost.transform.rotation.eulerAngles.y, 90))
         {
-            bcollider = new Vector3(1, 1, len);
-            ccollider.z = ccollider.z + (float)((len - 1) * .5);
-          //  Debug.Log("up " + _ghost.transform.rotation.eulerAngles.y);
+            _bCollider = new Vector3(1, 1, len);
+            _cCollider.z += (float)((len - 1) * .5);
+            //  Debug.Log("up " + _ghost.transform.rotation.eulerAngles.y);
         }
-        else if ( _ghost.transform.rotation.eulerAngles.z == 90)
+        else if (Mathf.Approximately(_ghost.transform.rotation.eulerAngles.z, 90))
         {
-            bcollider = new Vector3(1, len, 1);
-            ccollider.y = ccollider.y + (float)((len - 1) * .5);
-           // Debug.Log("right" + _ghost.transform.rotation.eulerAngles.z);
+            _bCollider = new Vector3(1, len, 1);
+            _cCollider.y += (float)((len - 1) * .5);
+            // Debug.Log("right" + _ghost.transform.rotation.eulerAngles.z);
         }
         else
         {
-            bcollider = new Vector3(len, 1, 1);
-            ccollider.x = ccollider.x + (float)((len - 1) * .5);
-           // Debug.Log("normal z: " + _ghost.transform.rotation.eulerAngles.z + " y: " + _ghost.transform.rotation.eulerAngles.y);
+            _bCollider = new Vector3(len, 1, 1);
+            _cCollider.x += (float)((len - 1) * .5);
+            // Debug.Log("normal z: " + _ghost.transform.rotation.eulerAngles.z + " y: " + _ghost.transform.rotation.eulerAngles.y);
         }
 
         //the overlap box needs to have dimensions half that of the original, or it will be too large
-        Vector3 correct = bcollider / 3;
-        Collider[] hit = Physics.OverlapBox(ccollider, correct, Quaternion.identity, overlap);
+        Vector3 correct = _bCollider / 3;
+        Collider[] hit = Physics.OverlapBox(_cCollider, correct, Quaternion.identity, overlap);
         foreach (Collider found in hit)
         {
             Debug.Log("colliders: " + found);
@@ -435,10 +404,22 @@ public class ShipManager : MonoBehaviour
       //  Debug.Log("listed ship name: " + _shipObjects[_selectedShip][(_shipRations[_selectedShip] - SelectedRemaining()) - 1].gameObject.name);
 
 
+        //Debug.Log("index 2: " + (_shipRations[_selectedShip] - SelectedRemaining()));
+        Debug.Log("number placed: " + index);
+        GameObject colliderObject =
+            _shipObjects[_selectedShip][index].gameObject;
+        colliderObject.layer = LayerMask.NameToLayer("Ship");
+        colliderObject.transform.GetChild(0).gameObject.layer = LayerMask.NameToLayer("Ship");
+        colliderObject.name = colliderObject.name + " " + _index;
+        _index += 1;
+        //  Debug.Log("listed ship name: " + _shipObjects[_selectedShip][(_shipRations[_selectedShip] - SelectedRemaining()) - 1].gameObject.name);
+        
+        _network.PlaceShip(_selectedShip, ShipsPlaced(_selectedShip), _ghost);
         //  _shipObjects[_selectedShip][(_shipRations[_selectedShip] - SelectedRemaining()) - 1].gameObject.GetComponent<LineShipView>().index = (_shipRations[_selectedShip] - SelectedRemaining()) - 1;
 
         //update UI
-        texts[(int)_selectedShip].text = SelectedRemaining() + "";
+        // texts[(int)_selectedShip].text = SelectedRemaining() + "";
+        _placementUI.UpdateButtons();
 
         HandleCursorMoved(); // checks if out of ships
     }
@@ -446,16 +427,16 @@ public class ShipManager : MonoBehaviour
     private ShipView ObjectFromSelected()
     {
         // Above function but does selected ship
-        return lineShipPrefabs[(int)_selectedShip];
+        return _shipTypeManager.GetPrefab(_selectedShip);
     }
-    
+
     void OnDrawGizmos()
     {
         Gizmos.color = Color.red;
         // Check that it is being run in Play Mode, so it doesn't try to draw this in Editor mode
         if (Application.isPlaying)
             // Draw a cube where the OverlapBox is (positioned where your GameObject is as well as a size)
-            Gizmos.DrawWireCube(ccollider, bcollider);
+            Gizmos.DrawWireCube(_cCollider, _bCollider);
     }
 
 

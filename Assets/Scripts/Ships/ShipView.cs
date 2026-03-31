@@ -5,10 +5,16 @@ namespace Ships
     public abstract class ShipView : MonoBehaviour
     {
         protected Ship _ship;
+        private Renderer _renderer;
 
-        public bool HasValidPlacement(int fieldSize)
+        protected void Awake()
         {
-            return _ship.HasValidPlacement(fieldSize);
+            _renderer = GetComponentInChildren<Renderer>();
+        }
+
+        public bool HasValidPlacement(Vector3 size)
+        {
+            return _ship.HasValidPlacement(size);
         }
 
         public void Rotate()
@@ -18,7 +24,7 @@ namespace Ships
 
         public void SetMaterial(Material newMat)
         {
-            GetComponentInChildren<Renderer>().material = newMat;
+            _renderer.material = newMat;
         }
 
         public void MoveShip(Vector3 worldPos, Vector3 gamePos)
@@ -35,6 +41,11 @@ namespace Ships
         public void SetAxes(AxisObject axes)
         {
             _ship.SetAxes(axes);
+        }
+
+        public Ship GetShip()
+        {
+            return _ship;
         }
     }
 }
