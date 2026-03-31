@@ -10492,6 +10492,7 @@ MonoBehaviour:
   ghostInvalid: {fileID: 2100000, guid: 6127d4de711a943449b4666e964c5b93, type: 2}
   cam: {fileID: 843973634}
   isActiveBoard: 1
+  placementLocked: 0
   overlap:
     serializedVersion: 2
     m_Bits: 8
@@ -10759,9 +10760,9 @@ MonoBehaviour:
   m_OnClick:
     m_PersistentCalls:
       m_Calls:
-      - m_Target: {fileID: 412167433}
-        m_TargetAssemblyTypeName: ShipManager, Assembly-CSharp
-        m_MethodName: Protect
+      - m_Target: {fileID: 1266493275}
+        m_TargetAssemblyTypeName: TurnManager, Assembly-CSharp
+        m_MethodName: ConfirmPlacement
         m_Mode: 1
         m_Arguments:
           m_ObjectArgument: {fileID: 0}
@@ -10782,7 +10783,7 @@ MonoBehaviour:
           m_FloatArgument: 0
           m_StringArgument: 
           m_BoolArgument: 0
-        m_CallState: 2
+        m_CallState: 0
 --- !u!114 &535838306
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -10995,6 +10996,7 @@ MonoBehaviour:
   ghostInvalid: {fileID: 2100000, guid: 6127d4de711a943449b4666e964c5b93, type: 2}
   cam: {fileID: 951163517}
   isActiveBoard: 1
+  placementLocked: 0
   overlap:
     serializedVersion: 2
     m_Bits: 8
