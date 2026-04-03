@@ -12,57 +12,57 @@ namespace Ships
     
     public abstract class Ship
     {
+        // this is used to calculate valid placement
         public abstract bool HasValidPlacement(Vector3 size);
+        
         public void Rotate(Transform transform)
         {
-            _axes.TransformFrom(transform);
-            _axes = GetNextAxes();
-            _axes.TransformTo(transform);
+            // transforms back to rest
+            _axis.TransformFrom(transform);
+            // gets next axis
+            _axis = GetNextAxes();
+            // transforms to axis
+            _axis.TransformTo(transform);
         }
         
-        private AxisObject _axes = Axes.X;
-
-        public void SetAxes(AxisObject ax)
+        public void SetAxis(AxisObject ax)
         {
-            _axes = ax;
+            _axis = ax;
         }
-
-        protected float X = 0f;
-        protected float Y = 0f;
-        protected float Z = 0f;
-
+        
         public void SetPosition(Vector3 newPos)
         {
             X = newPos.x;
             Y = newPos.y;
             Z = newPos.z;
         }
+        
+        public AxisObject GetAxes()
+        {
+            return _axis;
+        }
+        
+        protected float X;
+        protected float Y;
+        protected float Z;
 
         protected Axis GetAxis()
         {
-            return _axes.GetAxis();
+            return _axis.GetAxis();
         }
-
-        public AxisObject GetAxes()
-        {
-            return _axes;
-        }
+        
+        private AxisObject _axis = Axes.X;
 
         private AxisObject GetNextAxes()
         {
             // find next axis based of what the current axis is
-            return _axes.GetAxis() switch
+            return _axis.GetAxis() switch
             {
                 Axis.X => Axes.Z,
                 Axis.Z => Axes.Y,
                 Axis.Y => Axes.X,
                 _ => throw new ArgumentOutOfRangeException()
             };
-        }
-
-        public Vector3 GetPos()
-        {
-            return new Vector3(X, Y, Z);
         }
     }
 }

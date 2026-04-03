@@ -4,7 +4,8 @@ namespace Ships
 {
     public abstract class ShipView : MonoBehaviour
     {
-        protected Ship _ship;
+        // base class for ship prefabs
+        protected Ship Ship;
         private Renderer _renderer;
 
         protected void Awake()
@@ -14,12 +15,12 @@ namespace Ships
 
         public bool HasValidPlacement(Vector3 size)
         {
-            return _ship.HasValidPlacement(size);
+            return Ship.HasValidPlacement(size);
         }
 
         public void Rotate()
         {
-            _ship.Rotate(transform);
+            Ship.Rotate(transform);
         }
 
         public void SetMaterial(Material newMat)
@@ -29,23 +30,25 @@ namespace Ships
 
         public void MoveShip(Vector3 worldPos, Vector3 gamePos)
         {
-            _ship.SetPosition(gamePos);
+            Ship.SetPosition(gamePos);
             transform.position = worldPos;
         }
 
         public AxisObject GetAxes()
         {
-            return _ship.GetAxes();
+            // Axis Object with Transforms
+            return Ship.GetAxes();
         }
 
-        public void SetAxes(AxisObject axes)
+        public void SetAxis(AxisObject axis)
         {
-            _ship.SetAxes(axes);
+            // sets axis object
+            Ship.SetAxis(axis);
         }
 
         public Ship GetShip()
         {
-            return _ship;
+            return Ship;
         }
     }
 }

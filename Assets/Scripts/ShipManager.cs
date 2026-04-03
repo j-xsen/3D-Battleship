@@ -30,7 +30,7 @@ public class ShipManager : MonoBehaviour
     private int _selectedShip; // the current "ghost" ship
     private bool _placing; // this is a config bool to toggle updating the ghost
     private ShipPlacementUI _placementUI; // placement UI
-    private Dictionary<int, List<ShipView>> _shipObjects; // a list of all ship game objects to keep count
+    private Dictionary<int, List<ShipView>> _shipObjects; // a dictionary of a list of all ship game objects
 
     // inputs
     private InputAction _placeShip;
@@ -65,6 +65,16 @@ public class ShipManager : MonoBehaviour
         // get ship type manager
         _shipTypeManager = GetComponent<ShipTypeManager>();
         if (!_shipTypeManager) Debug.LogError("No ShipTypeManager found on ShipManager");
+        
+        // get PlacementUI, which should be attached with this object
+        _placementUI = GetComponentInParent<ShipPlacementUI>();
+        if (!_placementUI) Debug.LogError("No ShipPlacementUI found with ShipManager");
+        
+        if (!spaceBuilder)
+        {
+            Debug.LogError("No SpaceBuilder found on ShipManager!");
+            return;
+        }
 
         // hover events
         HoverActions.current.Clicked += PlaceShip;
@@ -86,25 +96,15 @@ public class ShipManager : MonoBehaviour
         _rotateShipLeft = InputSystem.actions.FindAction("SpaceField/ShipRotateLeft");
         if (_rotateShipLeft != null) _rotateShipLeft.performed += _onRotateShip;
 
-        // init ship objects dict with null values
+        // init ship objects dict with empty lists
         _shipObjects = new Dictionary<int, List<ShipView>>();
         foreach (int shipType in _shipTypeManager.Rations().Keys)
         {
             _shipObjects[shipType] = new List<ShipView>();
         }
 
-        // get PlacementUI, which should be attached with this object
-        _placementUI = GetComponentInParent<ShipPlacementUI>();
-        if (!_placementUI) Debug.LogError("No ShipPlacementUI found with ShipManager");
-
         _placing = true; // config
         _selectedShip = _shipTypeManager.MinShip(); // defaults ghost ship to the smallest ship
-
-        if (!spaceBuilder)
-        {
-            Debug.LogError("No SpaceBuilder found on ShipManager!");
-            return;
-        }
 
         spaceBuilder.OnCursorMoved += HandleCursorMoved; // gets called every time the cursor moves
         HandleCursorMoved(); // creates ghost on start
@@ -137,7 +137,7 @@ public class ShipManager : MonoBehaviour
     
     private void OnDestroy()
     {
-        // unload input function
+        // unload input functions
         if (spaceBuilder) spaceBuilder.OnCursorMoved -= HandleCursorMoved;
         if (_placeShip != null) _placeShip.performed -= _onPlaceShip;
         if (_cycleShip != null) _cycleShip.performed -= _onCycleShip;
@@ -171,7 +171,7 @@ public class ShipManager : MonoBehaviour
         return isActiveBoard && !placementLocked;
     }
 
-    private int Remaining(int shipType)
+    public int Remaining(int shipType)
     {
         // returns number of shipTypes remaining
         int startingRation = _shipTypeManager.Rations(shipType);
@@ -250,7 +250,7 @@ public class ShipManager : MonoBehaviour
 
         // remakes ghost with the transform info & parents to self
         _ghost = Instantiate(ObjectFromSelected(), newPos, newRot, transform);
-        _ghost.SetAxes(savedAxes);
+        _ghost.SetAxis(savedAxes);
         _ghost.MoveShip(newPos, spaceBuilder.GetCursorLocation());
         _ghost.SetMaterial(GetMaterial());
     }
@@ -362,7 +362,7 @@ public class ShipManager : MonoBehaviour
 
     private ShipView ObjectFromSelected()
     {
-        // Above function but does selected ship
+        // Gets the prefab / game object for the selected ship
         return _shipTypeManager.GetPrefab(_selectedShip);
     }
 
@@ -371,20 +371,20 @@ public class ShipManager : MonoBehaviour
         isActiveBoard = active;
     }
 
-    public bool
-        AllShipsPlaced() // iterates through the dict and compares how many ships are allowed to how many are placed
+    public bool AllShipsPlaced()
     {
-        foreach ((int shipType, int allowed) in _shipTypeManager.Rations())
+        // iterates through the dict and compares how many ships are allowed to how many are placed
+        foreach ((int shipType, int _) in _shipTypeManager.Rations())
         {
-            if (_shipObjects[shipType].Count < allowed) return false;
+            if (Remaining(shipType) != 0) return false;
         }
 
         return true;
     }
 
-    public void
-        LockPlacement() // changes bool type to true and checks if a ghost object is still present and if so destroys it
+    public void LockPlacement()
     {
+        // changes bool type to true and checks if a ghost object is still present and if so destroys it
         placementLocked = true;
 
         if (!_ghost) return;
