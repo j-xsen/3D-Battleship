@@ -7,8 +7,8 @@ namespace UI
 {
     public class ShipPlacementUI : MonoBehaviour
     {
-        [SerializeField] private UIDocument uiDoc;
-        [SerializeField] private VisualTreeAsset shipPlaceButton;
+        [SerializeField] private UIDocument uiDoc; // uidoc where container is created
+        [SerializeField] private VisualTreeAsset shipPlaceButton; // prefab place button
         
         private ShipTypeManager _typeManager;
         private Dictionary<int, Button> _buttons;
@@ -18,14 +18,18 @@ namespace UI
 
         private void Awake()
         {
+            // init empty dictionaries
             _buttons = new Dictionary<int, Button>();
             _labels = new Dictionary<int, Label>();
+            
+            // find type manager
             _typeManager = GetComponentInParent<ShipTypeManager>();
             if(!_typeManager) Debug.LogError("No ShipTypeManager with ShipPlacementUI");
+            
             // button container
             VisualElement container = new()
             {
-                pickingMode = PickingMode.Ignore,
+                pickingMode = PickingMode.Ignore, // ignore mouse clicks
                 style =
                 {
                     position = Position.Absolute,
@@ -71,9 +75,7 @@ namespace UI
         {
             foreach ((int shipType, Button _) in _buttons)
             {
-                int startingRation = _typeManager.Rations(shipType);
-                int numberPlaced = _sm.ShipsPlaced(shipType);
-                int remaining = startingRation - numberPlaced;
+                int remaining = _sm.Remaining(shipType);
                 _buttons[shipType].SetEnabled(remaining > 0);
                 _labels[shipType].text = remaining.ToString();
             }

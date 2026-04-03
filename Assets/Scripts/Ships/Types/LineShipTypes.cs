@@ -5,6 +5,7 @@ namespace Ships.Types
 {
     public class LineShipTypes : ShipTypeGroup<LineShipTypes.Types>
     {
+        // basic straight line ships
         public enum Types
         {
             Two,
