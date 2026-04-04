@@ -37,7 +37,7 @@ namespace Network
         // if they are, sets a session property
         // each client detects a session property change and checks what it is
         // if the state is Lobby and all ready is true, then it will head to GameScene
-        private readonly SessionProperty _allReady = new("true");
+        // private readonly SessionProperty _allReady = new("true");
         // states -
         //      LOBBY - players are connecting
         //      PLACING - players are placing ships
@@ -46,11 +46,12 @@ namespace Network
         private readonly SessionProperty _sLobby = new("Lobby");
         private readonly SessionProperty _sPlacing = new("Placing");
         private readonly SessionProperty _sAtWar = new("AtWar");
+        // keeps track of client's current state
+        private string _lastState;
         
         // name of game scene file
         private const string GameScene = "Game";
         private EventCallback<ChangeEvent<bool>> _readyCallback;
-        private bool _loaded;
 
         private void Awake()
         {
@@ -77,42 +78,11 @@ namespace Network
                 Debug.LogException(e);
             }
         }
-
-        // CLIENT
-        private void OnSessionChanged()
-        {
-            // Debug.Log("Session changed!");
-            // called when session properties change
-            
-            // get the game state
-            _session.Properties.TryGetValue(StateName, out SessionProperty gameState);
-
-            if (gameState?.Value == _sLobby.Value)
-            {
-                // lobby
-                // if not AllReady or playerCount != 2, ignore
-                if (!_session.Properties.TryGetValue(AllReadyName, out SessionProperty sVal) ||
-                    sVal.Value != _allReady.Value || _session.PlayerCount != 2) return;
-                if (!_loaded) LoadGame();
-            }
-            else if (gameState?.Value == _sPlacing.Value)
-            {
-                //placing
-            }
-            else if (gameState?.Value == _sAtWar.Value)
-            {
-                // cycling turns
-            }
-            else
-            {
-                Debug.Log("No GameState on Session");
-            }
-        }
-
+        
         private void OnSessionAdded(ISession session)
         {
-            // Debug.Log("OnSessionAdded fired! IsHost: " + session.IsHost);
             // user joined a lobby
+            // Debug.Log("OnSessionAdded fired! IsHost: " + session.IsHost);
             uxmlReadyUp.CloneTree(uiDoc.rootVisualElement);
             _session = session;
 
@@ -139,11 +109,15 @@ namespace Network
             try
             {
                 // Debug.Log($"OnSessionAddedAsync: IsHost={session.IsHost}");
+                
+                // sends ready player property
                 await SendReady(false);
-                // Debug.Log("SendReady done");
+                
                 // set up host, only if is the host
                 if (!session.IsHost) return;
+                
                 Debug.Log("Setting up host...");
+                
                 _host = _session.AsHost();
                 _session.PlayerPropertiesChanged += OnPlayerPropertiesChanged;
 
@@ -154,6 +128,46 @@ namespace Network
             catch (Exception e)
             {
                 Debug.LogException(e);
+            }
+        }
+
+        // CLIENT
+        private void OnSessionChanged()
+        {
+            // called when session properties change
+            // Debug.Log("Session changed!");
+
+            // get the game state
+            _session.Properties.TryGetValue(StateName, out SessionProperty gameState);
+
+            if (gameState == null) return; // game state not found
+
+            if (_lastState == null)
+            {
+                Debug.Log("LastState empty. setting to gameState.Value");
+                
+                // last state not set, set to game's state
+                _lastState = gameState.Value;
+            } else if (_lastState != gameState.Value)
+            {
+                // Debug.Log("LastState != gameState.Value");
+                // Debug.Log($"LastState: {_lastState} / gameState: {gameState.Value}");
+                
+                // last state does not match game's state
+                // if last state is not lobby, ignore (game already loaded)
+                if (_lastState != _sLobby.Value) return;
+                
+                // Debug.Log("Last state == sLobby");
+                
+                // switching from lobby to game
+                // ensure 2 players
+                if (_session.PlayerCount != 2) return;
+                
+                // Debug.Log("2 players");
+                
+                _lastState = gameState.Value;
+                
+                LoadGame();
             }
         }
 
@@ -187,10 +201,9 @@ namespace Network
         }
         
         // CLIENT
-        private void LoadGame()
+        private static void LoadGame()
         {
             UnityEngine.SceneManagement.SceneManager.LoadScene(GameScene);
-            _loaded = true;
         }
 
         // CLIENT
@@ -257,12 +270,24 @@ namespace Network
         }
 
         // HOST
-        private async void StartGame()
+        private void StartGame()
         {
             try
             {
                 Debug.Log("Starting game...");
-                _host.SetProperty(AllReadyName, new SessionProperty("true"));
+                SetState(_sPlacing);
+            }
+            catch (Exception e)
+            {
+                Debug.LogException(e);
+            }
+        }
+
+        private async void SetState(SessionProperty state)
+        {
+            try
+            {
+                _host.SetProperty(StateName, state);
                 await _host.SavePropertiesAsync();
             }
             catch (Exception e)
@@ -272,21 +297,9 @@ namespace Network
         }
         
         // HOST
-        private async void SetLobby()
+        private void SetLobby()
         {
-            try
-            {
-                Debug.Log("SetLobby: Attempting to set state...");
-                _host.SetProperty(StateName, _sLobby);
-                await _host.SavePropertiesAsync();
-                Debug.Log("SetLobby: saved. Current state: " + 
-                          (_session.Properties.TryGetValue(StateName, out SessionProperty p) ?
-                              p.Value : "NOT FOUND"));
-            }
-            catch (Exception e)
-            {
-                Debug.LogException(e);
-            }
+            SetState(_sLobby);
         }
     }
     
