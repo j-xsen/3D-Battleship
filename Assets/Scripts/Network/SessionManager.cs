@@ -6,6 +6,9 @@ using Unity.Services.Multiplayer;
 using UnityEngine;
 using UnityEngine.UIElements;
 
+// CLIENT - ran by every player
+// HOST - ran only by host
+
 namespace Network
 {
     public class SessionManager : MonoBehaviour
@@ -23,7 +26,7 @@ namespace Network
         private const string ModeName = "mode";
         private const string GameScene = "Game";
         private EventCallback<ChangeEvent<bool>> _readyCallback;
-        private bool _loaded = false;
+        private bool _loaded;
 
         private void Awake()
         {
@@ -32,6 +35,7 @@ namespace Network
 
         private async void Start()
         {
+            // connect to unity services
             try
             {
                 await UnityServices.InitializeAsync();
@@ -46,16 +50,22 @@ namespace Network
             }
         }
 
+        // CLIENT
         private void OnSessionChanged()
         {
+            // called when session properties change
+            
+            // if not AllReady or playerCount != 2, ignore
             if (!_session.Properties.TryGetValue(AllReadyName, out SessionProperty sVal) ||
                 sVal.Value != _allReady.Value || _session.PlayerCount != 2) return;
 
             if (!_loaded) LoadGame();
         }
 
+        // CLIENT
         private void OnSessionAdded(ISession session)
         {
+            // user joined a lobby
             uxmlReadyUp.CloneTree(uiDoc.rootVisualElement);
             _session = session;
 
@@ -67,17 +77,21 @@ namespace Network
                 toggle.RegisterCallback(_readyCallback);
             }
 
+            // set up session events
             _session.Changed += OnSessionChanged;
             SendReady(false);
 
+            // set up host, only if is the host
             if (!session.IsHost) return;
 
             _host = _session.AsHost();
             _session.PlayerPropertiesChanged += OnPlayerPropertiesChanged;
         }
 
+        // CLIENT
         private void OnSessionRemoved(ISession session)
         {
+            // player left lobby
             VisualElement toggle = uiDoc.rootVisualElement.Q<Toggle>("Toggle");
             toggle?.UnregisterCallback(_readyCallback);
             _readyCallback = null;
@@ -87,7 +101,46 @@ namespace Network
             _session = null;
             _host = null;
         }
+        
+        // CLIENT
+        private async void SendReady(bool status)
+        {
+            try
+            {
+                _session.CurrentPlayer.SetProperty(ReadyName, status ? _ready : _notReady);
+                await _session.SaveCurrentPlayerDataAsync();
+            }
+            catch (Exception e)
+            {
+                Debug.LogException(e);
+            }
+        }
+        
+        // CLIENT
+        private void LoadGame()
+        {
+            UnityEngine.SceneManagement.SceneManager.LoadScene(GameScene);
+            _loaded = true;
+        }
 
+        // CLIENT
+        public async void PlaceShip(int shipType, int number, ShipView ship)
+        {
+            try
+            {
+                Axis axis = ship.GetAxes().GetAxis();
+                Vector3 pos = ship.transform.position;
+                string value = $"{pos.x},{pos.y},{pos.z}/{axis}";
+                _session.CurrentPlayer.SetProperty($"{shipType};{number}", new PlayerProperty(value));
+                await _session.SaveCurrentPlayerDataAsync();
+            }
+            catch (Exception e)
+            {
+                Debug.LogException(e);
+            }
+        }
+
+        // HOST
         private bool AllPlayersReady()
         {
             bool allReady = true;
@@ -105,6 +158,7 @@ namespace Network
             return allReady;
         }
 
+        // HOST
         private string CurrentMode()
         {
             _session.Properties.TryGetValue(ModeName, out SessionProperty sVal);
@@ -122,20 +176,6 @@ namespace Network
             // LoadGame();
         }
 
-        // CLIENT
-        private async void SendReady(bool status)
-        {
-            try
-            {
-                _session.CurrentPlayer.SetProperty(ReadyName, status ? _ready : _notReady);
-                await _session.SaveCurrentPlayerDataAsync();
-            }
-            catch (Exception e)
-            {
-                Debug.LogException(e);
-            }
-        }
-
         // HOST
         private async void StartGame()
         {
@@ -144,29 +184,6 @@ namespace Network
                 _host.SetProperty(AllReadyName, new SessionProperty("true"));
                 _host.SetProperty(ModeName, _modePlacing);
                 await _host.SavePropertiesAsync();
-            }
-            catch (Exception e)
-            {
-                Debug.LogException(e);
-            }
-        }
-
-        private void LoadGame()
-        {
-            UnityEngine.SceneManagement.SceneManager.LoadScene(GameScene);
-            _loaded = true;
-        }
-
-        // CLIENT
-        public async void PlaceShip(int shipType, int number, ShipView ship)
-        {
-            try
-            {
-                Axis axis = ship.GetAxes().GetAxis();
-                Vector3 pos = ship.transform.position;
-                string value = $"{pos.x},{pos.y},{pos.z}/{axis}";
-                _session.CurrentPlayer.SetProperty($"{shipType};{number}", new PlayerProperty(value));
-                await _session.SaveCurrentPlayerDataAsync();
             }
             catch (Exception e)
             {
