@@ -59,8 +59,8 @@ public class ShipManager : MonoBehaviour
     private void Start()
     {
         // find network
-        // _network = GameObject.FindWithTag("NetworkManager")?.GetComponent<SessionManager>();
-        // if (!_network) Debug.LogError("Unable to find NetworkManager!");
+        _network = GameObject.FindWithTag("NetworkManager")?.GetComponent<SessionManager>();
+        if (!_network) Debug.LogError("Unable to find NetworkManager!");
 
         // get ship type manager
         _shipTypeManager = GetComponent<ShipTypeManager>();
@@ -358,6 +358,8 @@ public class ShipManager : MonoBehaviour
         _placementUI.UpdateButtons();
 
         HandleCursorMoved(); // checks if out of ships
+        
+        if (_network) _network.PlaceShip(_selectedShip, ShipsPlaced(_selectedShip), _ghost);
     }
 
     private ShipView ObjectFromSelected()

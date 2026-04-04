@@ -11,6 +11,10 @@ using UnityEngine.UIElements;
 
 namespace Network
 {
+    internal enum GameStates
+    {
+        Lobby,
+    }
     public class SessionManager : MonoBehaviour
     {
         [SerializeField] private UIDocument uiDoc;
@@ -21,6 +25,12 @@ namespace Network
         private readonly PlayerProperty _ready = new("true");
         private readonly SessionProperty _allReady = new("true");
         private readonly SessionProperty _modePlacing = new("placing");
+        // // Session properties
+        // states -
+        //      LOBBY
+        private readonly SessionProperty _state = new(nameof(GameStates.Lobby));
+        
+        // Strings used as variable names in the session
         private const string ReadyName = "ready";
         private const string AllReadyName = "allReady";
         private const string ModeName = "mode";
