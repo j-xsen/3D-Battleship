@@ -23,8 +23,8 @@ namespace Network
         
         // Strings used as variable names in the session
         private const string ReadyName = "ready";
-        private const string AllReadyName = "allReady";
         private const string StateName = "state";
+        private const string ShipsName = "ships";
         
         // // Player properties
         // ready / not ready
@@ -209,12 +209,33 @@ namespace Network
         // CLIENT
         public async void PlaceShip(int shipType, int number, ShipView ship)
         {
+            // tells server where ship is placed
             try
             {
+                // init empty string
+                string shipsString = "";
+                
+                // check if ships property exists
+                _session.CurrentPlayer.Properties.TryGetValue(ShipsName + shipType, out PlayerProperty ships);
+                if (ships != null)
+                {
+                    shipsString = ships.Value + ";";
+                }
+                
+                // shipsString format -
+                //      / - position and axis separator
+                //      ; - ship separator
+                
+                // // adjust string to have ship added
+                // get ship information
                 Axis axis = ship.GetAxes().GetAxis();
                 Vector3 pos = ship.transform.position;
-                string value = $"{pos.x},{pos.y},{pos.z}/{axis}";
-                _session.CurrentPlayer.SetProperty($"{shipType};{number}", new PlayerProperty(value));
+                // ship string
+                string currentShip = $"{pos.x},{pos.y},{pos.z}/{axis}";
+                
+                // update
+                string value = shipsString + currentShip;
+                _session.CurrentPlayer.SetProperty(ShipsName + shipType, new PlayerProperty(value));
                 await _session.SaveCurrentPlayerDataAsync();
             }
             catch (Exception e)
