@@ -10491,8 +10491,8 @@ MonoBehaviour:
   ghostValid: {fileID: 2100000, guid: f9f6ad8fbc9e3834d9c10c61b3177ebc, type: 2}
   ghostInvalid: {fileID: 2100000, guid: 6127d4de711a943449b4666e964c5b93, type: 2}
   cam: {fileID: 843973634}
-  isActiveBoard: 1
   placementLocked: 0
+  isActiveBoard: 1
   overlap:
     serializedVersion: 2
     m_Bits: 8
@@ -10995,8 +10995,8 @@ MonoBehaviour:
   ghostValid: {fileID: 2100000, guid: f9f6ad8fbc9e3834d9c10c61b3177ebc, type: 2}
   ghostInvalid: {fileID: 2100000, guid: 6127d4de711a943449b4666e964c5b93, type: 2}
   cam: {fileID: 951163517}
-  isActiveBoard: 1
   placementLocked: 0
+  isActiveBoard: 1
   overlap:
     serializedVersion: 2
     m_Bits: 8

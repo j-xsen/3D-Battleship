@@ -1,6 +1,7 @@
 using System;
 using System.Threading.Tasks;
 using Ships;
+using TMPro;
 using Unity.Services.Authentication;
 using Unity.Services.Core;
 using Unity.Services.Multiplayer;
@@ -156,19 +157,28 @@ namespace Network
                 // last state does not match game's state
                 // if last state is not lobby, ignore (game already loaded)
                 if (_lastState != _sLobby.Value) return;
-                
                 // Debug.Log("Last state == sLobby");
                 
                 // switching from lobby to game
                 // ensure 2 players
                 if (_session.PlayerCount != 2) return;
-                
                 // Debug.Log("2 players");
                 
+                // reset ready
+                _ = ResetReady();
+                
+                // store this state as client's last loaded
                 _lastState = gameState.Value;
                 
                 LoadGame();
             }
+        }
+        
+        // CLIENT
+        private async Task ResetReady()
+        {
+            _session.CurrentPlayer.SetProperty(ReadyName, _notReady);
+            await _session.SaveCurrentPlayerDataAsync();
         }
 
         // CLIENT
@@ -186,7 +196,7 @@ namespace Network
         }
         
         // CLIENT
-        private async Task SendReady(bool status)
+        public async Task SendReady(bool status)
         {
             try
             {
