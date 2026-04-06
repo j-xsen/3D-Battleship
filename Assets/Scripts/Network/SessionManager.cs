@@ -105,7 +105,7 @@ namespace Network
             return allReady;
         }
 
-        private string CurrentMode()
+        private string CurrentMode() //future change mode to "combat" then "finished"
         {
             _session.Properties.TryGetValue(ModeName, out SessionProperty sVal);
             return sVal != null ? sVal.ToString() : string.Empty;
