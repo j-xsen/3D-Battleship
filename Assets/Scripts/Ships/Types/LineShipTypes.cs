@@ -18,10 +18,10 @@ namespace Ships.Types
         protected override int MaxShip => (int)Types.Five;
 
         // TODO : server gets settings?
-        public override Dictionary<int, int> Rations => new() {
-            [(int)Types.Two] = 4,
-            [(int)Types.Three] = 3,
-            [(int)Types.Four] = 2,
+        public override Dictionary<int, int> Rations => new() { //lowering for testing, feel free to change back 
+            [(int)Types.Two] = 1,
+            [(int)Types.Three] = 1,
+            [(int)Types.Four] = 1,
             [(int)Types.Five] = 1
         };
     }

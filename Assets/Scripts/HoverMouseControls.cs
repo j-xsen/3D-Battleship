@@ -33,10 +33,13 @@ public class HoverMouseControls : MonoBehaviour, IPointerEnterHandler, IPointerC
             HoverActions.current.OnShipClicked(this.gameObject);
             //        Debug.Log("SHIP");
         }
-        //Debug.Log("Clicked");
-        else
+        if (HoverActions.current.currentMode == HoverActions.InputMode.Placement)//ship placement click
         {
             HoverActions.current.OnClicked();
+        }
+        else if (HoverActions.current.currentMode == HoverActions.InputMode.Combat) //combat shooting click 
+        {
+            HoverActions.current.OnCombatClicked();
         }
     }
 }

@@ -371,12 +371,16 @@ public class ShipManager : MonoBehaviour
             direction = new Vector3Int(1, 0, 0);
         }
 
-        List<Vector3Int> occupiedCells = GetOccupiedCells(startCell, direction, len);
+        //////////////
+        List<Vector3Int> occupiedCells = GetOccupiedCells(startCell, direction, len);// grabs ships starting cell, direction, and length 
 
         foreach (Vector3Int cell in occupiedCells)
         {
             Debug.Log($"Ship occupies cell: {cell}");
         }
+
+        spaceBuilder.Register_ship_data(_selectedShip, len, occupiedCells);
+
 
         GameObject colliderObject = newShip.gameObject;
         colliderObject.layer = LayerMask.NameToLayer("Ship");

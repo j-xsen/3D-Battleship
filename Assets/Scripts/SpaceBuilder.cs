@@ -252,24 +252,15 @@ public class SpaceBuilder : MonoBehaviour
     }
 
 
-    ///////////
+    /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     // Multiplayer methods i.e data 
 
 
     
 
 
-    public void ShipData()
-    {
-        //ship type 
-
-        //length
-
-        //occupied cells
-
-        //hit cells
-
-    }
+    
 
     public void BoardData()
     {
@@ -286,9 +277,101 @@ public class SpaceBuilder : MonoBehaviour
         //creates arrays and clears any ship list 
     }
 
-    private void Register_ship_data()
+    public void Register_ship_data(int shipType, int length, List<Vector3Int> occupiedCells)
     {
         //when ShipManager places a ship, call board data and mark all occupied cells 
+
+
+        ShipRecord record = new ShipRecord();
+        record.shipType = shipType;
+        record.length = length;
+        record.occupiedCells = new List<Vector3Int>(occupiedCells);
+
+        foreach(Vector3Int cell in occupiedCells)
+        {
+            // checks if cell is in bounds or is already occupied 
+            if (cell.x < 0 || cell.x >= sizeWidth ||
+                cell.y < 0 || cell.y >= sizeHeight ||
+                cell.z < 0 || cell.z >= sizeDepth)
+            {
+                Debug.LogError($"Ship cell out of bounds: {cell}");
+                return;
+            }
+
+            if (_shipGrid[cell.x, cell.y, cell.z] != null)
+            {
+                Debug.LogError($"Cell already occupied: {cell}");
+                return;
+            }
+            /////
+            ///
+
+            _shipGrid[cell.x, cell.y, cell.z] = record;// ship assignment 
+
+            Debug.Log($"Stored ship in grid cell {cell}");
+
+        }
+        Debug.Log($"Registered ship type {shipType} with {occupiedCells.Count} cells");
+    }
+
+    public ShipRecord GetShipAtCell(Vector3Int cell)//for multiplayer 
+    {
+        return _shipGrid[cell.x, cell.y, cell.z];
+    }
+
+
+    public void DebugCell(Vector3Int cell)
+    {
+    Debug.Log(_shipGrid[cell.x, cell.y, cell.z] == null
+        ? $"Cell {cell} is empty"
+        : $"Cell {cell} contains ship type {_shipGrid[cell.x, cell.y, cell.z].shipType}");
+    }
+
+    public void RegisterAttack(Vector3Int cell)
+    {
+        //checks if in bounds 
+        if (cell.x < 0 || cell.x >= sizeWidth ||
+                cell.y < 0 || cell.y >= sizeHeight ||
+                cell.z < 0 || cell.z >= sizeDepth)
+        {
+            Debug.LogError($"Ship cell out of bounds: {cell}");
+            return;
+        }
+
+        //checks if that cell is already marked as attacked 
+        if (_attackedCells[cell.x, cell.y, cell.z] == true)
+        {
+            Debug.Log($"{cell} already attacked");
+            return;
+        }
+        //its not 
+        _attackedCells[cell.x, cell.y, cell.z] = true; //now marked as attacked cell 
+
+        //checks for a ship at cell location 
+        if(_shipGrid[cell.x, cell.y, cell.z] == null)
+        {
+            Debug.Log($"Shot Missed at {cell}");//didnt hit or find an active cell at that location 
+        }else// a ship is there 
+        {
+            ShipRecord attack = _shipGrid[cell.x, cell.y, cell.z];
+            attack.hitCells.Add(cell); // add cell to hitCells 
+            Debug.Log($"Hits at {cell}"); 
+        }
+    }
+
+    public void SetCursorVisible(bool visible)
+    {
+        if (showCursor && !visible)
+        {
+            _renderers[_selectedX, _selectedY, _selectedZ].material = defaultMat;
+        }
+
+        showCursor = visible;
+
+        if (showCursor)
+        {
+            _renderers[_selectedX, _selectedY, _selectedZ].material = selectMat;
+        }
     }
 
 
