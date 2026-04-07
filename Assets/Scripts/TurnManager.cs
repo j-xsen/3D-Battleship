@@ -1,3 +1,5 @@
+using System.Threading.Tasks;
+using Network;
 using UnityEngine;
 
 public class TurnManager : MonoBehaviour
@@ -13,6 +15,8 @@ public class TurnManager : MonoBehaviour
     [SerializeField] private Camera player2Camera;
 
     private bool player1Turn = true;
+
+    private SessionManager _sm;
 
     private void Start()
     {
@@ -33,6 +37,16 @@ public class TurnManager : MonoBehaviour
         {
             HoverActions.current.CombatClicked -= HandleCombatClick;
         }
+        // get session manager
+        _sm = GameObject.FindGameObjectWithTag("NetworkManager").GetComponent<SessionManager>();
+        if (!_sm) Debug.LogError("Unable to find session manager!");
+        
+        SetTurn(true);
+    }
+
+    private async Task ConfirmPlacementAsync()
+    {
+        await _sm.SendReady(true);
     }
 
     public void ConfirmPlacement()
@@ -50,6 +64,7 @@ public class TurnManager : MonoBehaviour
             player1ShipManager.LockPlacement();
             player1Turn = false;
             SetTurn(false);
+            _ = ConfirmPlacementAsync();
         }
         else
         {

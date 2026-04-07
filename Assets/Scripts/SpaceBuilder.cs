@@ -66,7 +66,7 @@ public class SpaceBuilder : MonoBehaviour
     
     private void Start()
     {
-        DontDestroyOnLoad(this);
+        // DontDestroyOnLoad(this);
         if (HoverActions.current)
         {
             HoverActions.current.UpdatePosition += UpdateSelectedMos;
