@@ -26,6 +26,7 @@ namespace Network
         private const string ReadyName = "ready";
         private const string StateName = "state";
         private const string ShipsName = "ships";
+        private const string ModeName = "mode";
         
         // // Player properties
         // ready / not ready
