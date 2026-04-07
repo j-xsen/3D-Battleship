@@ -1,6 +1,7 @@
 using System;
 using UnityEngine;
 using UnityEngine.InputSystem;
+using System.Collections.Generic;
 
 public class SpaceBuilder : MonoBehaviour
 {
@@ -22,6 +23,13 @@ public class SpaceBuilder : MonoBehaviour
     private int _selectedX;
     private int _selectedY;
     private int _selectedZ;
+
+
+    //grid data for combat 
+    //ship locations 
+    private ShipRecord[,,] _shipGrid;
+    //cell shot grid 
+    private bool[,,] _attackedCells;
 
     private InputAction _selectUp;
     private InputAction _selectDown;
@@ -93,6 +101,10 @@ public class SpaceBuilder : MonoBehaviour
         
         // make an array of renderers so we don't keep calling GetComponent
         _renderers = new Renderer[sizeWidth, sizeHeight, sizeDepth];
+        // attacking data 
+        _shipGrid = new ShipRecord[sizeWidth, sizeHeight, sizeDepth];
+        _attackedCells = new bool[sizeWidth, sizeHeight, sizeDepth];
+
         GenerateField();
         // init to 0,0,0
         UpdateSelected(0,0,0);
@@ -238,4 +250,47 @@ public class SpaceBuilder : MonoBehaviour
     {
         return _origin;
     }
+
+
+    ///////////
+    // Multiplayer methods i.e data 
+
+
+    
+
+
+    public void ShipData()
+    {
+        //ship type 
+
+        //length
+
+        //occupied cells
+
+        //hit cells
+
+    }
+
+    public void BoardData()
+    {
+        //list of ships on the grid (positions)
+
+        //attacked cells 
+
+
+
+    }
+
+    private void Initialize_Board_Data()
+    {
+        //creates arrays and clears any ship list 
+    }
+
+    private void Register_ship_data()
+    {
+        //when ShipManager places a ship, call board data and mark all occupied cells 
+    }
+
+
+
 }

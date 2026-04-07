@@ -343,7 +343,40 @@ public class ShipManager : MonoBehaviour
             transform
         );
 
-        _shipObjects[_selectedShip].Add(newShip);
+        _shipObjects[_selectedShip].Add(newShip);//placing it, grab data here
+
+        //////////////////////////////
+        // Grabbing Ship Location, length, direction 
+
+        Vector3 cursor = spaceBuilder.GetCursorLocation();
+        //convert to Vector3Int
+        Vector3Int startCell = new Vector3Int(
+            Mathf.RoundToInt(cursor.x),
+            Mathf.RoundToInt(cursor.y),
+            Mathf.RoundToInt(cursor.z)
+        );
+
+        Vector3Int direction;
+
+        if (Mathf.Approximately(_ghost.transform.rotation.eulerAngles.y, 90))
+        {
+            direction = new Vector3Int(0, 0, 1);
+        }
+        else if (Mathf.Approximately(_ghost.transform.rotation.eulerAngles.z, 90))
+        {
+            direction = new Vector3Int(0, 1, 0);
+        }
+        else
+        {
+            direction = new Vector3Int(1, 0, 0);
+        }
+
+        List<Vector3Int> occupiedCells = GetOccupiedCells(startCell, direction, len);
+
+        foreach (Vector3Int cell in occupiedCells)
+        {
+            Debug.Log($"Ship occupies cell: {cell}");
+        }
 
         GameObject colliderObject = newShip.gameObject;
         colliderObject.layer = LayerMask.NameToLayer("Ship");
@@ -404,5 +437,17 @@ public class ShipManager : MonoBehaviour
         }
 
         LockPlacement();
+    }
+
+    List<Vector3Int> GetOccupiedCells(Vector3Int startcell, Vector3Int direction, int len)
+    {
+        List<Vector3Int> cells = new List<Vector3Int>();
+
+        for (int i = 0; i < len; i++)
+        {
+            cells.Add(startcell + direction * i);
+        }
+
+        return cells;
     }
 }

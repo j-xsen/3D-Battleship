@@ -10491,6 +10491,8 @@ MonoBehaviour:
   ghostValid: {fileID: 2100000, guid: f9f6ad8fbc9e3834d9c10c61b3177ebc, type: 2}
   ghostInvalid: {fileID: 2100000, guid: 6127d4de711a943449b4666e964c5b93, type: 2}
   cam: {fileID: 843973634}
+  uiDoc: {fileID: 0}
+  shipPlaceButton: {fileID: 0}
   placementLocked: 0
   isActiveBoard: 1
   overlap:
@@ -10623,7 +10625,7 @@ MonoBehaviour:
   m_faceColor:
     serializedVersion: 2
     rgba: 4294967295
-  m_fontSize: 29.75
+  m_fontSize: 18
   m_fontSizeBase: 24
   m_fontWeight: 400
   m_enableAutoSizing: 1
@@ -10972,13 +10974,14 @@ GameObject:
   - component: {fileID: 642157106}
   - component: {fileID: 642157105}
   - component: {fileID: 642157104}
+  - component: {fileID: 642157108}
   m_Layer: 0
   m_Name: Player_2_Grid
   m_TagString: Builder
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 0
+  m_IsActive: 1
 --- !u!114 &642157104
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -10995,6 +10998,8 @@ MonoBehaviour:
   ghostValid: {fileID: 2100000, guid: f9f6ad8fbc9e3834d9c10c61b3177ebc, type: 2}
   ghostInvalid: {fileID: 2100000, guid: 6127d4de711a943449b4666e964c5b93, type: 2}
   cam: {fileID: 951163517}
+  uiDoc: {fileID: 0}
+  shipPlaceButton: {fileID: 0}
   placementLocked: 0
   isActiveBoard: 1
   overlap:
@@ -11048,6 +11053,23 @@ Transform:
   m_Children: []
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &642157108
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 642157103}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 71369264ce8e44349d35484e1f2ebb27, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::Ships.Types.ShipTypeManager
+  lineShipPrefabs:
+  - {fileID: 7505190258006911646, guid: 230ed9a3413e91b44972837110117d5f, type: 3}
+  - {fileID: 4934041461330996125, guid: f1390fead6403554d8abb8a65a060268, type: 3}
+  - {fileID: 5259067707087747510, guid: af8144da39e0bed44a268064f0ba27b9, type: 3}
+  - {fileID: 6513169586624146606, guid: d5f783790029bd64492851bfb47b41c9, type: 3}
 --- !u!1 &787062242
 GameObject:
   m_ObjectHideFlags: 0
@@ -11132,7 +11154,7 @@ MonoBehaviour:
   m_faceColor:
     serializedVersion: 2
     rgba: 4294967295
-  m_fontSize: 28.95
+  m_fontSize: 18.05
   m_fontSizeBase: 24
   m_fontWeight: 400
   m_enableAutoSizing: 1
