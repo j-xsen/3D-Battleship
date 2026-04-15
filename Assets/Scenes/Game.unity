@@ -10491,8 +10491,6 @@ MonoBehaviour:
   ghostValid: {fileID: 2100000, guid: f9f6ad8fbc9e3834d9c10c61b3177ebc, type: 2}
   ghostInvalid: {fileID: 2100000, guid: 6127d4de711a943449b4666e964c5b93, type: 2}
   cam: {fileID: 843973634}
-  uiDoc: {fileID: 0}
-  shipPlaceButton: {fileID: 0}
   placementLocked: 0
   isActiveBoard: 1
   overlap:
@@ -10510,6 +10508,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 8a69bc1c36ef13342bf3bb8901a98aa7, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::hover
+  currentMode: 0
 --- !u!114 &412167435
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -10625,7 +10624,7 @@ MonoBehaviour:
   m_faceColor:
     serializedVersion: 2
     rgba: 4294967295
-  m_fontSize: 18
+  m_fontSize: 29.75
   m_fontSizeBase: 24
   m_fontWeight: 400
   m_enableAutoSizing: 1
@@ -10785,7 +10784,7 @@ MonoBehaviour:
           m_FloatArgument: 0
           m_StringArgument: 
           m_BoolArgument: 0
-        m_CallState: 0
+        m_CallState: 2
 --- !u!114 &535838306
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -10998,8 +10997,6 @@ MonoBehaviour:
   ghostValid: {fileID: 2100000, guid: f9f6ad8fbc9e3834d9c10c61b3177ebc, type: 2}
   ghostInvalid: {fileID: 2100000, guid: 6127d4de711a943449b4666e964c5b93, type: 2}
   cam: {fileID: 951163517}
-  uiDoc: {fileID: 0}
-  shipPlaceButton: {fileID: 0}
   placementLocked: 0
   isActiveBoard: 1
   overlap:
@@ -11038,6 +11035,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 8a69bc1c36ef13342bf3bb8901a98aa7, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::hover
+  currentMode: 0
 --- !u!4 &642157107
 Transform:
   m_ObjectHideFlags: 0
@@ -11154,7 +11152,7 @@ MonoBehaviour:
   m_faceColor:
     serializedVersion: 2
     rgba: 4294967295
-  m_fontSize: 18.05
+  m_fontSize: 28.95
   m_fontSizeBase: 24
   m_fontWeight: 400
   m_enableAutoSizing: 1
