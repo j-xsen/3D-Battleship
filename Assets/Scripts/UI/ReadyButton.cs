@@ -42,16 +42,6 @@ namespace UI
         // Update is called once per frame
         private void Update()
         {
-            // TODO - readd this, gives error rn
-            //might be better to create an event trigger but this is functional
-            // if (button.interactable == false & (one.interactable == false & two.interactable == false & three.interactable == false & four.interactable == false))
-            // {
-            //     ReadyTrigger();
-            // }
-            /*else if (button.interactable != false)
-        {
-            TakeBack();
-        }*/
             if (!button.interactable & _shipManager.AllShipsPlaced())
             {
                 EnableReady();
@@ -60,10 +50,9 @@ namespace UI
 
         public void Ready()
         {
-            // SceneManager.LoadScene("GamePlay");
             if (_network)
             {
-                _ = _network.SendReady(true);
+                _ = _network.SendReadyAsync(true);
             }
             else
             {
