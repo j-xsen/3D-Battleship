@@ -431,6 +431,13 @@ public class ShipManager : MonoBehaviour
         _ghost = null;
     }
 
+    public void UnlockPlacement()
+    {
+        placementLocked = false;
+        
+        ReinstantiateGhost();
+    }
+
     public void TryLockPlacement()
     {
         // holder function that checks if all ships are placed for that player then activates lock

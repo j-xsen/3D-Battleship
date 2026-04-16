@@ -65,6 +65,7 @@ namespace Network
         // events
         public event Action<string> OnStateChanged;
         public event Action OnMyTurn;
+        public event Action OnTheirTurn;
 
         private void Awake()
         {
@@ -196,9 +197,10 @@ namespace Network
                     // last state is Placing
                     // current state should be At War
 
-                    if (_host != null) OnMyTurn?.Invoke();
-                    
                     SetLastState(gameState.Value);
+                    
+                    if (_host != null) OnMyTurn?.Invoke();
+                    else OnTheirTurn?.Invoke();
                 }
             }
         }
@@ -268,6 +270,8 @@ namespace Network
         {
             SceneManager.sceneLoaded -= OnGameSceneLoaded;
             _gameSceneReady = true;
+
+            if (_session is { IsHost: true }) _host = _session.AsHost();
         }
 
         // CLIENT

@@ -1,0 +1,9 @@
+<ui:UXML xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:ui="UnityEngine.UIElements" xmlns:uie="UnityEditor.UIElements" noNamespaceSchemaLocation="../../UIElementsSchema/UIElements.xsd" editor-extension-mode="False">
+    <ui:VisualElement style="flex-grow: 1; flex-direction: row; right: 0; left: 0; top: 0; bottom: 0;">
+        <ui:Label text="AT WAR" name="TextAtWar" style="-unity-font-definition: resource(&quot;Fonts &amp; Materials/Ethnocentric-Regular&quot;); left: 0; top: 0; color: rgb(255, 255, 255);"/>
+        <ui:VisualElement style="flex-grow: 1; flex-direction: row; justify-content: flex-end; align-content: flex-end;">
+            <ui:Label text="Turn: " name="TextTurn" style="-unity-font-definition: resource(&quot;Fonts &amp; Materials/Ethnocentric-Regular&quot;); -unity-text-align: upper-right; color: rgb(255, 255, 255);"/>
+            <ui:Label text="???" name="CurrentPlayer" style="-unity-font-definition: resource(&quot;Fonts &amp; Materials/Ethnocentric-Regular&quot;); color: rgb(255, 255, 255);"/>
+        </ui:VisualElement>
+    </ui:VisualElement>
+</ui:UXML>

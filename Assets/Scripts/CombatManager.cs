@@ -1,20 +1,80 @@
+using System;
+using Network;
+using Unity.Networking.Transport;
 using UnityEngine;
+using UnityEngine.EventSystems;
 
-public class CombatManager
+public class CombatManager : MonoBehaviour
 {
 
-    [SerializeField] private bool player1_turn = true;
+    // [SerializeField] private bool player1_turn = true;
 
     //whos turn it is for combat 
-    private void player_turn()
+    // private void player_turn()
+    // {
+    //     if(!player1_turn)
+    //     {
+    //         //TurnManager.SwitchTurn();
+    //     }
+//    }
+
+    private SessionManager _network;
+    private ShipManager _shipManager;
+    private SpaceBuilder _board;
+
+    private void Awake()
     {
-        if(!player1_turn)
+        _network = FindFirstObjectByType<SessionManager>();
+        _network.OnMyTurn += OnMyTurn;
+        _network.OnTheirTurn += OnTheirTurn;
+        _network.OnStateChanged += OnStateChange;
+
+        _shipManager = FindFirstObjectByType<ShipManager>();
+        _board = FindFirstObjectByType<SpaceBuilder>();
+    }
+
+    private void OnDestroy()
+    {
+        if (_network)
         {
-            //TurnManager.SwitchTurn();
+            _network.OnMyTurn -= OnMyTurn;
+            _network.OnTheirTurn -= OnTheirTurn;
+            _network.OnStateChanged -= OnStateChange;
         }
     }
-    
-    
+
+    private void OnStateChange(string state)
+    {
+        if (state == "AtWar")
+        {
+            enabled = true;
+        }
+    }
+
+    private void OnMyTurn()
+    {
+        Debug.LogError("My turn!");
+        _shipManager.SetActiveBoard(true);
+        _board.SetCursorVisible(true);
+        _board.SetActiveBoard(true);
+        HoverActions.current.Clicked += SendShot;
+    }
+
+    private void OnTheirTurn()
+    {
+        Debug.LogError("Their turn!");
+        _shipManager.SetActiveBoard(false);
+        _board.SetCursorVisible(false);
+        _board.SetActiveBoard(false);
+        HoverActions.current.Clicked -= SendShot;
+    }
+
+    private void SendShot()
+    {
+        
+    }
+
+
 
     //sending shot request 
 
@@ -28,10 +88,10 @@ public class CombatManager
 
     //win con 
 
-    
 
 
 
 
-    
+
+
 }

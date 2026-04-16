@@ -1,132 +1,84 @@
 using System.Threading.Tasks;
 using Network;
 using UnityEngine;
+using UnityEngine.Serialization;
 
 public class TurnManager : MonoBehaviour
 {
-    [Header("Player 1")] [SerializeField] private SpaceBuilder player1Board;
+    [FormerlySerializedAs("player1Board")]
+    [Header("Player 1")] [SerializeField] private SpaceBuilder myBoard;
     [SerializeField] private ShipManager player1ShipManager;
-    [SerializeField] private Camera player1Camera;
-
-    // [Header("Player 2")] [SerializeField] private SpaceBuilder player2Board;
-    // [SerializeField] private ShipManager player2ShipManager;
-    // [SerializeField] private Camera player2Camera;
-
-    private bool player1Turn = true;
+    
+    private bool isMyTurn;
 
     private SessionManager _sm;
 
-    private void Start()
+    private void Awake()
     {
-        if (HoverActions.current != null)
+        if (HoverActions.current)
         {
             HoverActions.current.currentMode = HoverActions.InputMode.Placement;
             HoverActions.current.CombatClicked += HandleCombatClick;
         }
 
-        SetTurn(true);
+        _sm = FindFirstObjectByType<SessionManager>();
+        if (!_sm)
+        {
+            Debug.LogError("TurnManager could not find SessionManager");
+        }
+        _sm.OnMyTurn += SetMyTurn;
+        _sm.OnTheirTurn += SetTheirTurn;
     }
 
     private void OnDestroy()
     {
-        if (HoverActions.current != null)
+        if (HoverActions.current)
         {
             HoverActions.current.CombatClicked -= HandleCombatClick;
         }
 
-        SetTurn(true);
+        if (_sm) return;
+        _sm.OnMyTurn -= SetMyTurn;
+        _sm.OnTheirTurn -= SetTheirTurn;
     }
 
+    public void ConfirmPlacement()
+    {
+        Debug.Log("Checking Player placement");
+
+        if (!player1ShipManager.AllShipsPlaced())
+        {
+            Debug.Log("Player must place all ships before locking in.");
+            return;
+        }
+
+        player1ShipManager.LockPlacement();
+        _ = ConfirmPlacementAsync();
+    }
+    
     private async Task ConfirmPlacementAsync()
     {
         await _sm.SendReadyAsync(true);
     }
 
-    public void ConfirmPlacement()
+    private void SetMyTurn()
     {
-        Debug.Log(player1Turn ? "Checking Player 1 placement" : "Checking Player 2 placement");
-
-        if (!player1ShipManager.AllShipsPlaced())
-        {
-            Debug.Log("Player 1 must place all ships before locking in.");
-            return;
-        }
-
-        player1ShipManager.LockPlacement();
-        player1Turn = false;
-        SetTurn(false);
-        _ = ConfirmPlacementAsync();
+        SetCombatTurn(true);
     }
 
-    public void SwitchTurn()
+    private void SetTheirTurn()
     {
-        player1Turn = !player1Turn;
-        SetTurn(player1Turn);
-    }
-
-    private void SetTurn(bool isPlayer1Turn)
-    {
-        return;
-        // player1Board.SetActiveBoard(isPlayer1Turn);
-        // player1ShipManager.SetActiveBoard(isPlayer1Turn);
-        // player1Camera.gameObject.SetActive(isPlayer1Turn);
-        //
-        // player2Board.SetActiveBoard(!isPlayer1Turn);
-        // player2ShipManager.SetActiveBoard(!isPlayer1Turn);
-        // player2Camera.gameObject.SetActive(!isPlayer1Turn);
-        //
-        // player1Board.SetCursorVisible(isPlayer1Turn);
-        // player2Board.SetCursorVisible(!isPlayer1Turn);
+        SetCombatTurn(false);
     }
 
 
-    private void SetCombatTurn(bool isPlayer1Turn)
+    private void SetCombatTurn(bool myTurn)
     {
-        return;
-        // player1Turn = isPlayer1Turn;
-        //
-        // // placement stays locked
-        // player1ShipManager.SetActiveBoard(false);
-        // player2ShipManager.SetActiveBoard(false);
-        //
-        // if (player1Turn)
-        // {
-        //     // Player 1 attacks Player 2
-        //     player1Board.SetCursorVisible(false);
-        //     player2Board.SetCursorVisible(true); //cursor visible while player 1 is attacking player 2 
-        //
-        //     player2Camera.gameObject.SetActive(true); //looking at player 2's grid to attack 
-        //     player1Camera.gameObject.SetActive(false);
-        //
-        //     player1Board.SetActiveBoard(false);
-        //     player2Board.SetActiveBoard(true);
-        // }
-        // else
-        // {
-        //     // Player 2 attacks Player 1
-        //     player1Board.SetCursorVisible(true);
-        //     player2Board.SetCursorVisible(false);
-        //
-        //     player1Camera.gameObject.SetActive(true);
-        //     player2Camera.gameObject.SetActive(false);
-        //
-        //     player1Board.SetActiveBoard(true);
-        //     player2Board.SetActiveBoard(false);
-        // }
+        // placement stays locked
+        player1ShipManager.SetActiveBoard(myTurn);
+        myBoard.SetCursorVisible(myTurn);
+        myBoard.SetActiveBoard(myTurn);
     }
-
-    private void CombatPhase()
-    {
-        return;
-        // if (HoverActions.current != null)
-        // {
-        //     HoverActions.current.currentMode = HoverActions.InputMode.Combat;
-        // }
-        //
-        // SetCombatTurn(true);
-        // Debug.Log("Combat phase started. Player 1 is attacking Player 2.");
-    }
-
 
     private void HandleCombatClick()
     {
