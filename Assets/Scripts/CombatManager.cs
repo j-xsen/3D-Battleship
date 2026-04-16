@@ -3,6 +3,7 @@ using Network;
 using Unity.Networking.Transport;
 using UnityEngine;
 using UnityEngine.EventSystems;
+using UnityEngine.InputSystem;
 
 public class CombatManager : MonoBehaviour
 {
@@ -22,6 +23,9 @@ public class CombatManager : MonoBehaviour
     private ShipManager _shipManager;
     private SpaceBuilder _board;
 
+    private InputAction _shootAtAction;
+    private Action<InputAction.CallbackContext> _shootAtActionCtx;
+
     private void Awake()
     {
         _network = FindFirstObjectByType<SessionManager>();
@@ -31,6 +35,10 @@ public class CombatManager : MonoBehaviour
 
         _shipManager = FindFirstObjectByType<ShipManager>();
         _board = FindFirstObjectByType<SpaceBuilder>();
+        
+        _shootAtAction = InputSystem.actions.FindAction("ShipPlace");
+        _shootAtActionCtx = _ => SendShot();
+        _shootAtAction.performed += _shootAtActionCtx;
     }
 
     private void OnDestroy()
@@ -71,7 +79,9 @@ public class CombatManager : MonoBehaviour
 
     private void SendShot()
     {
-        
+        Vector3 shotLoc = _board.GetCursorLocation();
+        Debug.Log($"Shooting at {shotLoc}");
+        _ = _network.SetShotTarget(shotLoc);
     }
 
 

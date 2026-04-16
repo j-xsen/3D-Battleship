@@ -28,6 +28,7 @@ namespace Network
         private const string ShipsName = "ships";
         private const string ModeName = "mode";
         private const string TurnName = "turn";
+        private const string ShotName = "shot";
 
         // // Player properties
         // ready / not ready
@@ -209,6 +210,12 @@ namespace Network
         {
             _lastState = newLastState;
             OnStateChanged?.Invoke(_lastState);
+        }
+
+        public async Task SetShotTarget(Vector3 coords)
+        {
+            _session.CurrentPlayer.SetProperty(ShotName, new PlayerProperty(coords.ToString()));
+            await _session.SaveCurrentPlayerDataAsync();
         }
 
         // CLIENT
