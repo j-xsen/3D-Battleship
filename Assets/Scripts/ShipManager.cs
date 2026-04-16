@@ -395,8 +395,8 @@ public class ShipManager : MonoBehaviour
         _placementUI.UpdateButtons();
 
         HandleCursorMoved(); // checks if out of ships
-        
-        if (_network) _network.PlaceShipAsync(_selectedShip, ShipsPlaced(_selectedShip), _ghost);
+
+        if (_network) _network.PlaceShipAsync(_selectedShip, ShipsPlaced(_selectedShip), startCell, _ghost.GetAxes().GetAxis());
     }
 
     private ShipView ObjectFromSelected()

@@ -24,6 +24,18 @@ public class SpaceBuilder : MonoBehaviour
     private int _selectedY;
     private int _selectedZ;
 
+    private enum CellVisualState//for combat cell hits 
+    {
+        Normal,
+        Miss,
+        Hit
+    }
+
+    private CellVisualState[,,] _cellVisualStates;
+
+    [SerializeField] private Material missMat;
+    [SerializeField] private Material hitMat;
+
 
     //grid data for combat 
     //ship locations 
@@ -84,6 +96,8 @@ public class SpaceBuilder : MonoBehaviour
         _selectBack = InputSystem.actions.FindAction("SelectBack");
         _rotateMapRight = InputSystem.actions.FindAction("SpaceField/MapRotateRight");
         _rotateMapLeft = InputSystem.actions.FindAction("SpaceField/MapRotateLeft");
+        //
+        
 
         _upCtx = _ => UpdateSelected(0, 1, 0);
         _downCtx = _ => UpdateSelected(0, -1, 0);
@@ -104,6 +118,8 @@ public class SpaceBuilder : MonoBehaviour
         // attacking data 
         _shipGrid = new ShipRecord[sizeWidth, sizeHeight, sizeDepth];
         _attackedCells = new bool[sizeWidth, sizeHeight, sizeDepth];
+
+        _cellVisualStates = new CellVisualState[sizeWidth, sizeHeight, sizeDepth];
 
         GenerateField();
         // init to 0,0,0
@@ -185,39 +201,36 @@ public class SpaceBuilder : MonoBehaviour
         if (0 > newX || 0 > newY || 0 > newZ) return;
         if (sizeWidth <= newX || sizeHeight <= newY || sizeDepth <= newZ) return;
 
-        if (showCursor) _renderers[_selectedX, _selectedY, _selectedZ].material = defaultMat;
+        if (showCursor) ApplyCellVisual(_selectedX, _selectedY, _selectedZ, false);
 
         _selectedX = newX;
         _selectedY = newY;
         _selectedZ = newZ;
 
-        if (showCursor) _renderers[_selectedX, _selectedY, _selectedZ].material = selectMat;
+        if (showCursor) ApplyCellVisual(_selectedX, _selectedY, _selectedZ, true);
         // this alerts all the listeners
         OnCursorMoved?.Invoke();
     }
 
     private void UpdateSelected(int x, int y, int z)
     {
-        if (!isActiveBoard) return;//checks if the current board i.e player 1 is currently active, if not, it returns 
+        if (!isActiveBoard) return;
 
-        // validate
-        // TODO: notify of error?
         int newX = x + _selectedX;
         int newY = y + _selectedY;
         int newZ = z + _selectedZ;
 
         if (0 > newX || 0 > newY || 0 > newZ) return;
         if (sizeWidth <= newX || sizeHeight <= newY || sizeDepth <= newZ) return;
-        
-        if (showCursor) _renderers[_selectedX, _selectedY, _selectedZ].material = defaultMat;
+
+        if (showCursor) ApplyCellVisual(_selectedX, _selectedY, _selectedZ, false);
 
         _selectedX = newX;
         _selectedY = newY;
         _selectedZ = newZ;
 
-        if (showCursor) _renderers[_selectedX, _selectedY, _selectedZ].material = selectMat;
+        if (showCursor) ApplyCellVisual(_selectedX, _selectedY, _selectedZ, true);
 
-        // this alerts all the listeners
         OnCursorMoved?.Invoke();
     }
 
@@ -286,8 +299,9 @@ public class SpaceBuilder : MonoBehaviour
         record.shipType = shipType;
         record.length = length;
         record.occupiedCells = new List<Vector3Int>(occupiedCells);
+        record.hitCells = new HashSet<Vector3Int>();
 
-        foreach(Vector3Int cell in occupiedCells)
+        foreach (Vector3Int cell in occupiedCells)
         {
             // checks if cell is in bounds or is already occupied 
             if (cell.x < 0 || cell.x >= sizeWidth ||
@@ -327,50 +341,141 @@ public class SpaceBuilder : MonoBehaviour
         : $"Cell {cell} contains ship type {_shipGrid[cell.x, cell.y, cell.z].shipType}");
     }
 
-    public void RegisterAttack(Vector3Int cell)
+
+
+    private bool IsInBounds(Vector3Int cell)
     {
-        //checks if in bounds 
-        if (cell.x < 0 || cell.x >= sizeWidth ||
-                cell.y < 0 || cell.y >= sizeHeight ||
-                cell.z < 0 || cell.z >= sizeDepth)
+        return cell.x >= 0 && cell.x < sizeWidth &&
+               cell.y >= 0 && cell.y < sizeHeight &&
+               cell.z >= 0 && cell.z < sizeDepth;
+    }
+
+
+    public AttackResult RegisterAttack(Vector3Int cell)
+    {
+        if (!IsInBounds(cell))
         {
-            Debug.LogError($"Ship cell out of bounds: {cell}");
-            return;
+            Debug.LogError($"Attack out of bounds at {cell}");
+            return AttackResult.Miss;
         }
 
-        //checks if that cell is already marked as attacked 
-        if (_attackedCells[cell.x, cell.y, cell.z] == true)
+        if (_attackedCells[cell.x, cell.y, cell.z])
         {
             Debug.Log($"{cell} already attacked");
-            return;
+            return AttackResult.AlreadyAttacked;
         }
-        //its not 
-        _attackedCells[cell.x, cell.y, cell.z] = true; //now marked as attacked cell 
 
-        //checks for a ship at cell location 
-        if(_shipGrid[cell.x, cell.y, cell.z] == null)
+        _attackedCells[cell.x, cell.y, cell.z] = true;
+
+        ShipRecord ship = _shipGrid[cell.x, cell.y, cell.z];
+
+        if (ship == null)
         {
-            Debug.Log($"Shot Missed at {cell}");//didnt hit or find an active cell at that location 
-        }else// a ship is there 
-        {
-            ShipRecord attack = _shipGrid[cell.x, cell.y, cell.z];
-            attack.hitCells.Add(cell); // add cell to hitCells 
-            Debug.Log($"Hits at {cell}"); 
+            Debug.Log($" Miss at {cell}");
+            return AttackResult.Miss;
         }
+
+        // definite hit
+        ship.hitCells.Add(cell);
+        Debug.Log($" Hit at {cell} (ship type {ship.shipType})");
+
+        if (ship.hitCells.Count >= ship.length)
+        {
+            Debug.Log($" Ship DESTROYED at {cell}");
+            return AttackResult.Destroyed;
+        }
+
+        return AttackResult.Hit;
     }
 
     public void SetCursorVisible(bool visible)
     {
         if (showCursor && !visible)
         {
-            _renderers[_selectedX, _selectedY, _selectedZ].material = defaultMat;
+            ApplyCellVisual(_selectedX, _selectedY, _selectedZ, false);
         }
 
         showCursor = visible;
 
         if (showCursor)
         {
-            _renderers[_selectedX, _selectedY, _selectedZ].material = selectMat;
+            ApplyCellVisual(_selectedX, _selectedY, _selectedZ, true);
+        }
+    }
+
+    public GameObject GetCellObject(Vector3Int cell)
+    {
+        // bounds check
+        if (cell.x < 0 || cell.x >= sizeWidth ||
+            cell.y < 0 || cell.y >= sizeHeight ||
+            cell.z < 0 || cell.z >= sizeDepth)
+        {
+            Debug.LogError($"GetCellObject out of bounds: {cell}");
+            return null;
+        }
+
+        Renderer rend = _renderers[cell.x, cell.y, cell.z];
+        if (rend == null)
+        {
+            Debug.LogError($"No renderer found for cell {cell}");
+            return null;
+        }
+
+        return rend.gameObject;
+    }
+
+    public void MarkMiss(Vector3Int cell)
+    {
+        if (cell.x < 0 || cell.x >= sizeWidth ||
+            cell.y < 0 || cell.y >= sizeHeight ||
+            cell.z < 0 || cell.z >= sizeDepth)
+        {
+            return;
+        }
+
+        _cellVisualStates[cell.x, cell.y, cell.z] = CellVisualState.Miss;
+        ApplyCellVisual(cell.x, cell.y, cell.z, false);
+
+        Debug.Log($"VISUAL: Miss at {cell}");
+    }
+
+    public void MarkHit(Vector3Int cell)
+    {
+        if (cell.x < 0 || cell.x >= sizeWidth ||
+            cell.y < 0 || cell.y >= sizeHeight ||
+            cell.z < 0 || cell.z >= sizeDepth)
+        {
+            return;
+        }
+
+        _cellVisualStates[cell.x, cell.y, cell.z] = CellVisualState.Hit;
+        ApplyCellVisual(cell.x, cell.y, cell.z, false);
+
+        Debug.Log($"VISUAL: Hit at {cell}");
+    }
+
+    private void ApplyCellVisual(int x, int y, int z, bool selected)
+    {
+        Renderer rend = _renderers[x, y, z];
+        if (rend == null) return;
+
+        if (selected && showCursor)
+        {
+            rend.material = selectMat;
+            return;
+        }
+
+        switch (_cellVisualStates[x, y, z])
+        {
+            case CellVisualState.Miss:
+                rend.material = missMat;
+                break;
+            case CellVisualState.Hit:
+                rend.material = hitMat;
+                break;
+            default:
+                rend.material = defaultMat;
+                break;
         }
     }
 
