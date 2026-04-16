@@ -9,6 +9,9 @@ public class CameraRotator : MonoBehaviour
     private Vector2 _speed;
     private const float LeftCap = 40;
     private const float RightCap = 320;
+    private const float DragThreshold = 5f;
+
+    public static bool WasDragged { get; private set; }
 
     void Start()
     {
@@ -31,6 +34,7 @@ public class CameraRotator : MonoBehaviour
         if (Mouse.current.leftButton.wasPressedThisFrame)
         {
             _pos = Mouse.current.position.ReadValue();
+            WasDragged = false;
             //Debug.Log("pos: " + pos);
         }
         //check for mouse movement 
@@ -39,6 +43,7 @@ public class CameraRotator : MonoBehaviour
             _change = Mouse.current.position.ReadValue();
             //Debug.Log("cha: " + pos);
             _speed = new Vector2((_pos.x - _change.x), (_pos.y - _change.y));
+            if (_speed.magnitude > DragThreshold) WasDragged = true;
 
             if ((transform.rotation.eulerAngles.y is > 180 and <= RightCap &&
                  (_speed.x >= 0)) || (transform.rotation.eulerAngles.y is < 180 and >= LeftCap && (_speed.x <= 0)))

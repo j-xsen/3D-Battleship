@@ -37,9 +37,10 @@ public class HoverMouseControls : MonoBehaviour, IPointerEnterHandler, IPointerC
         {
             HoverActions.current.OnClicked();
         }
-        else if (HoverActions.current.currentMode == HoverActions.InputMode.Combat) //combat shooting click 
+        else if (HoverActions.current.currentMode == HoverActions.InputMode.Combat) //combat shooting click
         {
-            HoverActions.current.OnCombatClicked();
+            if (!CameraRotator.WasDragged)
+                HoverActions.current.OnCombatClicked();
         }
     }
 }
