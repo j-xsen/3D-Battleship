@@ -20,9 +20,9 @@ namespace Ships.Types
         // TODO : server gets settings?
         public override Dictionary<int, int> Rations => new() { //lowering for testing, feel free to change back 
             [(int)Types.Two] = 1,
-            [(int)Types.Three] = 1,
-            [(int)Types.Four] = 1,
-            [(int)Types.Five] = 1
+            [(int)Types.Three] = 0,
+            [(int)Types.Four] = 0,
+            [(int)Types.Five] = 0
         };
     }
 }

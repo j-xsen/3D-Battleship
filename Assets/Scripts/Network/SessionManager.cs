@@ -1,4 +1,5 @@
 using System;
+using System.Linq;
 using System.Threading.Tasks;
 using Ships;
 using Unity.Services.Authentication;
@@ -27,6 +28,8 @@ namespace Network
         private const string StateName = "state";
         private const string ShipsName = "ships";
         private const string ModeName = "mode";
+        private const string TurnName = "turn";
+        private const string ShotName = "shot";
 
         // // Player properties
         // ready / not ready
@@ -48,6 +51,10 @@ namespace Network
         private readonly SessionProperty _sLobby = new("Lobby");
         private readonly SessionProperty _sPlacing = new("Placing");
         private readonly SessionProperty _sAtWar = new("AtWar");
+        
+        // turns
+        private readonly SessionProperty _tOne = new("1");
+        private readonly SessionProperty _tTwo = new("2");
 
         // keeps track of client's current state
         private string _lastState;
@@ -59,6 +66,8 @@ namespace Network
 
         // events
         public event Action<string> OnStateChanged;
+        public event Action OnMyTurn;
+        public event Action OnTheirTurn;
 
         private void Awake()
         {
@@ -191,6 +200,9 @@ namespace Network
                     // current state should be At War
 
                     SetLastState(gameState.Value);
+                    
+                    if (_host != null) OnMyTurn?.Invoke();
+                    else OnTheirTurn?.Invoke();
                 }
             }
         }
@@ -199,6 +211,12 @@ namespace Network
         {
             _lastState = newLastState;
             OnStateChanged?.Invoke(_lastState);
+        }
+
+        public async Task SetShotTarget(Vector3 coords)
+        {
+            _session.CurrentPlayer.SetProperty(ShotName, new PlayerProperty(coords.ToString()));
+            await _session.SaveCurrentPlayerDataAsync();
         }
 
         // CLIENT
@@ -260,6 +278,8 @@ namespace Network
         {
             SceneManager.sceneLoaded -= OnGameSceneLoaded;
             _gameSceneReady = true;
+
+            if (_session is { IsHost: true }) _host = _session.AsHost();
         }
 
         // CLIENT
@@ -316,12 +336,6 @@ namespace Network
             return true;
         }
 
-        private string CurrentMode() //future change mode to "combat" then "finished"
-        {
-            _session.Properties.TryGetValue(ModeName, out SessionProperty sVal);
-            return sVal != null ? sVal.ToString() : string.Empty;
-        }
-
         // HOST
         private void OnPlayerPropertiesChanged()
         {
@@ -345,7 +359,40 @@ namespace Network
             }
             else if (gameState?.Value == _sAtWar.Value)
             {
+                string myId = _session.CurrentPlayer.Id;
                 // at war
+                _session.Properties.TryGetValue(TurnName, out SessionProperty turn);
+                
+                // get player whos turn it is
+                int playerIndex = Convert.ToInt32(turn?.Value);
+
+                IReadOnlyPlayer curPlayer = null;
+                if (turn?.Value == "1")
+                {
+                    curPlayer = _session.CurrentPlayer;
+                }
+                else
+                {
+                    foreach (IReadOnlyPlayer p in _session.Players)
+                    {
+                        if (p.Id == myId) continue;
+                        else curPlayer = p;
+                    }
+                }
+
+                if (curPlayer == null)
+                {
+                    Debug.LogError("Could not find player");
+                    return;
+                }
+                
+                curPlayer.Properties.TryGetValue(ShotName, out PlayerProperty coords);
+                if (coords == null) return;
+                
+                Debug.Log("coords: " + coords.Value);
+
+                _host.SetProperty(ShotName, new SessionProperty(coords?.Value));
+                _host.SavePropertiesAsync();
             }
             else
             {
@@ -371,6 +418,13 @@ namespace Network
             try
             {
                 _host.SetProperty(StateName, state);
+
+                if (state == _sAtWar)
+                {
+                    // Going to war, add turn property (default to host player 1)
+                    _host.SetProperty(TurnName, _tOne);
+                }
+                
                 await _host.SavePropertiesAsync();
             }
             catch (Exception e)

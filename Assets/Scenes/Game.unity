@@ -10432,6 +10432,7 @@ GameObject:
   - component: {fileID: 412167433}
   - component: {fileID: 412167435}
   - component: {fileID: 412167436}
+  - component: {fileID: 412167437}
   m_Layer: 0
   m_Name: Player_1_Grid
   m_TagString: Builder
@@ -10540,6 +10541,18 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::UI.ShipPlacementUI
   uiDoc: {fileID: 1079158958}
   shipPlaceButton: {fileID: 9197481963319205126, guid: 26d87e7d4b7c10c4da7cc5a9413c7b1d, type: 3}
+--- !u!114 &412167437
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 412167430}
+  m_Enabled: 0
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 4b336d12acc15c6408ae9abe2f3bee3d, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::CombatManager
 --- !u!1 &413106002
 GameObject:
   m_ObjectHideFlags: 0
@@ -16704,14 +16717,13 @@ MonoBehaviour:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1266493274}
-  m_Enabled: 1
+  m_Enabled: 0
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 5f92d73369825114391eedba1a55ab4f, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::TurnManager
-  player1Board: {fileID: 412167431}
+  myBoard: {fileID: 412167431}
   player1ShipManager: {fileID: 412167433}
-  player1Camera: {fileID: 843973636}
 --- !u!4 &1266493276
 Transform:
   m_ObjectHideFlags: 0
@@ -17060,6 +17072,52 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: '::'
   pause: {fileID: 1500485379}
+--- !u!1 &1367436570
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 1367436572}
+  - component: {fileID: 1367436571}
+  m_Layer: 0
+  m_Name: AtWarUI
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!114 &1367436571
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1367436570}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: c6daa516423241ef9d51e427c5f7eba3, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::UI.AtWarUI
+  uiDoc: {fileID: 1079158958}
+  atWarUI: {fileID: 9197481963319205126, guid: 04796462c8e5f21409d8dda0bcf8cea9, type: 3}
+--- !u!4 &1367436572
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1367436570}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 853.6274, y: -0.00002, z: 865.103}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &1416903875
 GameObject:
   m_ObjectHideFlags: 0
@@ -18123,3 +18181,4 @@ SceneRoots:
   - {fileID: 350422080}
   - {fileID: 1266493276}
   - {fileID: 1079158959}
+  - {fileID: 1367436572}
