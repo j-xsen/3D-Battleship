@@ -5,5 +5,6 @@ public enum AttackResult
     Miss,
     Hit,
     Destroyed,
-    AlreadyAttacked
+    AlreadyAttacked,
+    INVALID
 }

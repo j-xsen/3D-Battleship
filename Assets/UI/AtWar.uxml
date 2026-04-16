@@ -6,4 +6,10 @@
             <ui:Label text="???" name="CurrentPlayer" style="-unity-font-definition: resource(&quot;Fonts &amp; Materials/Ethnocentric-Regular&quot;); color: rgb(255, 255, 255);"/>
         </ui:VisualElement>
     </ui:VisualElement>
+    <ui:VisualElement style="flex-grow: 1; align-content: auto; align-self: flex-start; justify-content: flex-end; align-items: center;">
+        <ui:RadioButtonGroup label="Display:" name="Radios" style="align-self: center; align-items: center; align-content: auto; justify-content: flex-start; background-color: rgba(255, 255, 255, 0.54);">
+            <ui:RadioButton label="Their ships / My shots" value="false" name="TheirShips"/>
+            <ui:RadioButton label="My ships / Their shots" name="MyShips"/>
+        </ui:RadioButtonGroup>
+    </ui:VisualElement>
 </ui:UXML>

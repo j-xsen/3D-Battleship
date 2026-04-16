@@ -13,7 +13,7 @@ public class HoverMouseControls : MonoBehaviour, IPointerEnterHandler, IPointerC
     }
     public void OnPointerEnter(PointerEventData eventData)
     {
-        Debug.Log("Mouse entered: " + gameObject.transform.position);
+        // Debug.Log("Mouse entered: " + gameObject.transform.position);
         if (gameObject.layer != 3)
         {
             HoverActions.current.OnUpdatePosition(this.gameObject);
