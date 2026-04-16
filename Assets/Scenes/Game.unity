@@ -10453,9 +10453,9 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::SpaceBuilder
   spacePrefab: {fileID: 2398161462052709366, guid: 00bc0c7ce8568cb4c987fc0239606e28, type: 3}
-  sizeWidth: 8
+  sizeWidth: 6
   sizeHeight: 6
-  sizeDepth: 8
+  sizeDepth: 6
   defaultMat: {fileID: 2100000, guid: f2099daa183ec4d40a43b12a0a7ee26e, type: 2}
   selectMat: {fileID: 2100000, guid: 6127d4de711a943449b4666e964c5b93, type: 2}
   showCursor: 0
@@ -10548,11 +10548,13 @@ MonoBehaviour:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 412167430}
-  m_Enabled: 0
+  m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 4b336d12acc15c6408ae9abe2f3bee3d, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::CombatManager
+  shipManager: {fileID: 412167433}
+  board: {fileID: 412167431}
 --- !u!1 &413106002
 GameObject:
   m_ObjectHideFlags: 0
@@ -10637,7 +10639,7 @@ MonoBehaviour:
   m_faceColor:
     serializedVersion: 2
     rgba: 4294967295
-  m_fontSize: 29.75
+  m_fontSize: 26
   m_fontSizeBase: 24
   m_fontWeight: 400
   m_enableAutoSizing: 1
@@ -11058,7 +11060,7 @@ MonoBehaviour:
   m_faceColor:
     serializedVersion: 2
     rgba: 4294967295
-  m_fontSize: 28.95
+  m_fontSize: 25.6
   m_fontSizeBase: 24
   m_fontWeight: 400
   m_enableAutoSizing: 1
@@ -16723,7 +16725,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::TurnManager
   myBoard: {fileID: 412167431}
-  player1ShipManager: {fileID: 412167433}
+  myShipManager: {fileID: 412167433}
 --- !u!4 &1266493276
 Transform:
   m_ObjectHideFlags: 0

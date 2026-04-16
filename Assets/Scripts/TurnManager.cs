@@ -3,13 +3,18 @@ using Network;
 using UnityEngine;
 using UnityEngine.Serialization;
 
+
+
+//checks if player is done placing ships
+//locks placement and ready up 
+
 public class TurnManager : MonoBehaviour
 {
     [FormerlySerializedAs("player1Board")]
-    [Header("Player 1")] [SerializeField] private SpaceBuilder myBoard;
-    [SerializeField] private ShipManager player1ShipManager;
-    
-    private bool isMyTurn;
+    [Header("Player Board")]
+    [SerializeField] private SpaceBuilder myBoard;
+
+    [SerializeField] private ShipManager myShipManager;
 
     private SessionManager _sm;
 
@@ -18,7 +23,6 @@ public class TurnManager : MonoBehaviour
         if (HoverActions.current)
         {
             HoverActions.current.currentMode = HoverActions.InputMode.Placement;
-            HoverActions.current.CombatClicked += HandleCombatClick;
         }
 
         _sm = FindFirstObjectByType<SessionManager>();
@@ -26,92 +30,28 @@ public class TurnManager : MonoBehaviour
         {
             Debug.LogError("TurnManager could not find SessionManager");
         }
-        _sm.OnMyTurn += SetMyTurn;
-        _sm.OnTheirTurn += SetTheirTurn;
-    }
-
-    private void OnDestroy()
-    {
-        if (HoverActions.current)
-        {
-            HoverActions.current.CombatClicked -= HandleCombatClick;
-        }
-
-        if (_sm) return;
-        _sm.OnMyTurn -= SetMyTurn;
-        _sm.OnTheirTurn -= SetTheirTurn;
     }
 
     public void ConfirmPlacement()
     {
-        Debug.Log("Checking Player placement");
+        Debug.Log("Checking player placement");
 
-        if (!player1ShipManager.AllShipsPlaced())
+        if (!myShipManager.AllShipsPlaced())
         {
             Debug.Log("Player must place all ships before locking in.");
             return;
         }
 
-        player1ShipManager.LockPlacement();
+        myShipManager.LockPlacement();
+        myBoard.SetCursorVisible(false);
+        myBoard.SetActiveBoard(false);
+
         _ = ConfirmPlacementAsync();
     }
-    
+
     private async Task ConfirmPlacementAsync()
     {
+        if (_sm == null) return;
         await _sm.SendReadyAsync(true);
-    }
-
-    private void SetMyTurn()
-    {
-        SetCombatTurn(true);
-    }
-
-    private void SetTheirTurn()
-    {
-        SetCombatTurn(false);
-    }
-
-
-    private void SetCombatTurn(bool myTurn)
-    {
-        // placement stays locked
-        player1ShipManager.SetActiveBoard(myTurn);
-        myBoard.SetCursorVisible(myTurn);
-        myBoard.SetActiveBoard(myTurn);
-    }
-
-    private void HandleCombatClick()
-    {
-        return;
-        // if (player1Turn)
-        // {
-        //     // Vector3 target = player2Board.GetCursorLocation();
-        //     // Vector3Int cell = new Vector3Int(
-        //     //     Mathf.RoundToInt(target.x),
-        //     //     Mathf.RoundToInt(target.y),
-        //     //     Mathf.RoundToInt(target.z)
-        //     // );
-        //     //
-        //     // Debug.Log($"Player 1 attacks {cell}");
-        //     // player2Board.RegisterAttack(cell);
-        //
-        //     // later:
-        //     // SwitchCombatTurn();
-        // }
-        // else
-        // {
-        //     Vector3 target = player1Board.GetCursorLocation();
-        //     Vector3Int cell = new Vector3Int(
-        //         Mathf.RoundToInt(target.x),
-        //         Mathf.RoundToInt(target.y),
-        //         Mathf.RoundToInt(target.z)
-        //     );
-        //
-        //     Debug.Log($"Player 2 attacks {cell}");
-        //     player1Board.RegisterAttack(cell);
-
-            // later:
-            // SwitchCombatTurn();
-        // }
     }
 }

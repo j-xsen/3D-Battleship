@@ -1,58 +1,54 @@
-using System;
+using System.Threading.Tasks;
 using Network;
-using Unity.Networking.Transport;
 using UnityEngine;
-using UnityEngine.EventSystems;
 using UnityEngine.InputSystem;
 
 public class CombatManager : MonoBehaviour
 {
+    [SerializeField] private ShipManager shipManager;
+    [SerializeField] private SpaceBuilder board;
 
-    // [SerializeField] private bool player1_turn = true;
-
-    //whos turn it is for combat 
-    // private void player_turn()
-    // {
-    //     if(!player1_turn)
-    //     {
-    //         //TurnManager.SwitchTurn();
-    //     }
-//    }
-
-    private SessionManager _network;
-    private ShipManager _shipManager;
-    private SpaceBuilder _board;
-
-    private InputAction _shootAtAction;
-    private Action<InputAction.CallbackContext> _shootAtActionCtx;
+    private SessionManager network;
+    private bool isMyTurn;
+    private bool shotQueued;
 
     private void Awake()
     {
-        _network = FindFirstObjectByType<SessionManager>();
-        _network.OnMyTurn += OnMyTurn;
-        _network.OnTheirTurn += OnTheirTurn;
-        _network.OnStateChanged += OnStateChange;
+        network = FindFirstObjectByType<SessionManager>();
+        if (!network)
+        {
+            Debug.LogError("CombatManager could not find SessionManager");
+            return;
+        }
 
-        _shipManager = FindFirstObjectByType<ShipManager>();
-        _board = FindFirstObjectByType<SpaceBuilder>();
-        
-        _shootAtAction = InputSystem.actions.FindAction("ShipPlace");
-        _shootAtActionCtx = _ => SendShot();
-        _shootAtAction.performed += _shootAtActionCtx;
+        network.OnMyTurn += OnMyTurn;
+        network.OnTheirTurn += OnTheirTurn;
+        network.OnStateChanged += OnStateChange;
+
+        enabled = false;
     }
 
     private void OnDestroy()
     {
-        if (_network)
+        if (network)
         {
-            _network.OnMyTurn -= OnMyTurn;
-            _network.OnTheirTurn -= OnTheirTurn;
-            _network.OnStateChanged -= OnStateChange;
+            network.OnMyTurn -= OnMyTurn;
+            network.OnTheirTurn -= OnTheirTurn;
+            network.OnStateChanged -= OnStateChange;
         }
+    }
 
-        if (_shootAtAction != null)
+    private void Update()
+    {
+        // only allow firing during my turn while combat mode is active
+        if (!enabled || !isMyTurn || network == null || board == null) return;
+
+        // use Enter / Numpad Enter as the fire button
+        if (Keyboard.current != null &&
+            (Keyboard.current.enterKey.wasPressedThisFrame ||
+             Keyboard.current.numpadEnterKey.wasPressedThisFrame))
         {
-            _shootAtAction.performed -= _shootAtActionCtx;
+            SendShot();
         }
     }
 
@@ -61,52 +57,81 @@ public class CombatManager : MonoBehaviour
         if (state == "AtWar")
         {
             enabled = true;
+
+            if (HoverActions.current)
+            {
+                HoverActions.current.currentMode = HoverActions.InputMode.Combat;
+            }
+        }
+        else
+        {
+            enabled = false;
         }
     }
 
     private void OnMyTurn()
     {
-        Debug.LogError("My turn!");
-        _shipManager.SetActiveBoard(true);
-        _board.SetCursorVisible(true);
-        _board.SetActiveBoard(true);
-        HoverActions.current.Clicked += SendShot;
+        Debug.Log("My turn!");
+        isMyTurn = true;
+        shotQueued = false;
+
+        if (shipManager != null)
+        {
+            shipManager.SetActiveBoard(false);
+        }
+
+        if (board != null)
+        {
+            board.SetCursorVisible(true);
+            board.SetActiveBoard(true);
+        }
     }
 
     private void OnTheirTurn()
     {
-        Debug.LogError("Their turn!");
-        _shipManager.SetActiveBoard(false);
-        _board.SetCursorVisible(false);
-        _board.SetActiveBoard(false);
-        HoverActions.current.Clicked -= SendShot;
+        Debug.Log("Their turn!");
+        isMyTurn = false;
+        shotQueued = false;
+
+        if (shipManager != null)
+        {
+            shipManager.SetActiveBoard(false);
+        }
+
+        if (board != null)
+        {
+            board.SetCursorVisible(false);
+            board.SetActiveBoard(false);
+        }
     }
 
     private void SendShot()
     {
-        Vector3 shotLoc = _board.GetCursorLocation();
-        Debug.Log($"Shooting at {shotLoc}");
-        _ = _network.SetShotTarget(shotLoc);
+        if (!isMyTurn || network == null || board == null || shotQueued) return;
+
+        Vector3 cursor = board.GetCursorLocation();
+        Vector3Int shotCell = new Vector3Int(
+            Mathf.RoundToInt(cursor.x),
+            Mathf.RoundToInt(cursor.y),
+            Mathf.RoundToInt(cursor.z)
+        );
+
+        _ = SendShotAsync(shotCell);
     }
 
+    private async Task SendShotAsync(Vector3Int cell)
+    {
+        if (network == null || board == null) return;
 
+        Debug.Log($"Sending shot at {cell}");
 
-    //sending shot request 
+        // prevent double-fire while waiting for turn to switch
+        shotQueued = true;
+        isMyTurn = false;
 
+        board.SetActiveBoard(false);
+        board.SetCursorVisible(false);
 
-
-    //resolving hit/miss
-
-    //sink detection 
-
-    //combat phase transistions 
-
-    //win con 
-
-
-
-
-
-
-
+        await network.SetShotTarget(cell);
+    }
 }
