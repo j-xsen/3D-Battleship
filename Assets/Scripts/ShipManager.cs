@@ -165,6 +165,28 @@ public class ShipManager : MonoBehaviour
 
         Debug.Log("couldn't find ship");
     }
+
+    public void HideAll()
+    {
+        foreach (KeyValuePair<int, List<ShipView>> kvp in _shipObjects)
+        {
+            foreach (ShipView view in kvp.Value)
+            {
+                view.Hide();
+            }
+        }
+    }
+
+    public void ShowAll()
+    {
+        foreach (KeyValuePair<int, List<ShipView>> kvp in _shipObjects)
+        {
+            foreach (ShipView view in kvp.Value)
+            {
+                view.Show();
+            }
+        }
+    }
     
     private bool CanEditShips() // extra check
     {
