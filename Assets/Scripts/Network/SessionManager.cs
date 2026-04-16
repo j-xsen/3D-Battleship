@@ -27,6 +27,7 @@ namespace Network
         private const string StateName = "state";
         private const string ShipsName = "ships";
         private const string ModeName = "mode";
+        private const string TurnName = "turn";
 
         // // Player properties
         // ready / not ready
@@ -48,6 +49,10 @@ namespace Network
         private readonly SessionProperty _sLobby = new("Lobby");
         private readonly SessionProperty _sPlacing = new("Placing");
         private readonly SessionProperty _sAtWar = new("AtWar");
+        
+        // turns
+        private readonly SessionProperty _tOne = new("1");
+        private readonly SessionProperty _tTwo = new("2");
 
         // keeps track of client's current state
         private string _lastState;
@@ -59,6 +64,7 @@ namespace Network
 
         // events
         public event Action<string> OnStateChanged;
+        public event Action OnMyTurn;
 
         private void Awake()
         {
@@ -190,6 +196,8 @@ namespace Network
                     // last state is Placing
                     // current state should be At War
 
+                    if (_host != null) OnMyTurn?.Invoke();
+                    
                     SetLastState(gameState.Value);
                 }
             }
@@ -316,12 +324,6 @@ namespace Network
             return true;
         }
 
-        private string CurrentMode() //future change mode to "combat" then "finished"
-        {
-            _session.Properties.TryGetValue(ModeName, out SessionProperty sVal);
-            return sVal != null ? sVal.ToString() : string.Empty;
-        }
-
         // HOST
         private void OnPlayerPropertiesChanged()
         {
@@ -346,6 +348,18 @@ namespace Network
             else if (gameState?.Value == _sAtWar.Value)
             {
                 // at war
+                
+                // get player who turn it is
+                // _session.Properties.TryGetValue(TurnName, out SessionProperty currentPlayer);
+                // if (currentPlayer != null)
+                // {
+                //     // check if this player
+                //     if ((currentPlayer.Value == _tOne.Value & _session.IsHost) ||
+                //         (currentPlayer.Value == _tTwo.Value & _session.IsHost)
+                //     {
+                //         
+                //     }
+                // }
             }
             else
             {
@@ -371,6 +385,13 @@ namespace Network
             try
             {
                 _host.SetProperty(StateName, state);
+
+                if (state == _sAtWar)
+                {
+                    // Going to war, add turn property (default to host player 1)
+                    _host.SetProperty(TurnName, _tOne);
+                }
+                
                 await _host.SavePropertiesAsync();
             }
             catch (Exception e)
