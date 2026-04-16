@@ -396,7 +396,7 @@ public class ShipManager : MonoBehaviour
 
         HandleCursorMoved(); // checks if out of ships
         
-        if (_network) _network.PlaceShip(_selectedShip, ShipsPlaced(_selectedShip), _ghost);
+        if (_network) _network.PlaceShipAsync(_selectedShip, ShipsPlaced(_selectedShip), _ghost);
     }
 
     private ShipView ObjectFromSelected()
@@ -453,5 +453,10 @@ public class ShipManager : MonoBehaviour
         }
 
         return cells;
+    }
+
+    public SessionManager GetNetwork()
+    {
+        return _network;
     }
 }

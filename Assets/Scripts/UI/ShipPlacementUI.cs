@@ -1,4 +1,6 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
+using Network;
 using Ships.Types;
 using UnityEngine;
 using UnityEngine.UIElements;
@@ -45,7 +47,14 @@ namespace UI
             
             // define ShipManager
             _sm = GetComponentInParent<ShipManager>();
-            if(!_sm) Debug.LogError("No ShipManager with ShipPlacementUI");
+            // if (_sm)
+            // {
+            //     _sm.GetNetwork().OnStateChanged += OnStateChanged;                
+            // }
+            // else
+            // {
+            //     Debug.LogError("No ShipManager with ShipPlacementUI");
+            // }
             
             // create ui for each ShipType
             foreach ((int shipType, int count) in _typeManager.Rations())
@@ -70,6 +79,19 @@ namespace UI
                 container.Add(shipButtonElement);
             }
         }
+
+        public void Start()
+        {
+            SessionManager network = _sm?.GetNetwork();
+            if (network)
+            {
+                network.OnStateChanged += OnStateChanged;
+            }
+            else
+            {
+                Debug.LogError("No sessionmanager found from shipmanager");
+            }
+        }
         
         public void UpdateButtons()
         {
@@ -78,6 +100,22 @@ namespace UI
                 int remaining = _sm.Remaining(shipType);
                 _buttons[shipType].SetEnabled(remaining > 0);
                 _labels[shipType].text = remaining.ToString();
+            }
+        }
+
+        private void OnStateChanged(string state)
+        {
+            if (state == "AtWar")
+            {
+                uiDoc.rootVisualElement.Clear();
+            }
+        }
+
+        private void OnDestroy()
+        {
+            if (_sm)
+            {
+                _sm.GetNetwork().OnStateChanged -= OnStateChanged;
             }
         }
     }
