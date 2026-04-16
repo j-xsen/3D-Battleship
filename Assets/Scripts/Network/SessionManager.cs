@@ -1,4 +1,5 @@
 using System;
+using System.Linq;
 using System.Threading.Tasks;
 using Ships;
 using Unity.Services.Authentication;
@@ -358,19 +359,40 @@ namespace Network
             }
             else if (gameState?.Value == _sAtWar.Value)
             {
+                string myId = _session.CurrentPlayer.Id;
                 // at war
+                _session.Properties.TryGetValue(TurnName, out SessionProperty turn);
                 
-                // get player who turn it is
-                // _session.Properties.TryGetValue(TurnName, out SessionProperty currentPlayer);
-                // if (currentPlayer != null)
-                // {
-                //     // check if this player
-                //     if ((currentPlayer.Value == _tOne.Value & _session.IsHost) ||
-                //         (currentPlayer.Value == _tTwo.Value & _session.IsHost)
-                //     {
-                //         
-                //     }
-                // }
+                // get player whos turn it is
+                int playerIndex = Convert.ToInt32(turn?.Value);
+
+                IReadOnlyPlayer curPlayer = null;
+                if (turn?.Value == "1")
+                {
+                    curPlayer = _session.CurrentPlayer;
+                }
+                else
+                {
+                    foreach (IReadOnlyPlayer p in _session.Players)
+                    {
+                        if (p.Id == myId) continue;
+                        else curPlayer = p;
+                    }
+                }
+
+                if (curPlayer == null)
+                {
+                    Debug.LogError("Could not find player");
+                    return;
+                }
+                
+                curPlayer.Properties.TryGetValue(ShotName, out PlayerProperty coords);
+                if (coords == null) return;
+                
+                Debug.Log("coords: " + coords.Value);
+
+                _host.SetProperty(ShotName, new SessionProperty(coords?.Value));
+                _host.SavePropertiesAsync();
             }
             else
             {

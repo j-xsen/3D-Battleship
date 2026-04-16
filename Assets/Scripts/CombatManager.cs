@@ -49,6 +49,11 @@ public class CombatManager : MonoBehaviour
             _network.OnTheirTurn -= OnTheirTurn;
             _network.OnStateChanged -= OnStateChange;
         }
+
+        if (_shootAtAction != null)
+        {
+            _shootAtAction.performed -= _shootAtActionCtx;
+        }
     }
 
     private void OnStateChange(string state)
