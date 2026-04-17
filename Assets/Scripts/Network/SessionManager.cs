@@ -45,7 +45,6 @@ namespace Network
         private const string ReadyName = "ready";
         private const string StateName = "state";
         private const string ShipsName = "ships";
-        private const string ModeName = "mode";
         private const string TurnName = "turn";
         private const string ShotName = "shot";
         private const string ResultName = "result";
@@ -101,7 +100,7 @@ namespace Network
             DontDestroyOnLoad(gameObject);
         }
 
-        private async void Start()
+        private void Start()
         {
             try
             {
@@ -287,6 +286,10 @@ namespace Network
             try
             {
                 if (_session == null) return;
+
+                // Only save if the shot property is actually set to something
+                _session.CurrentPlayer.Properties.TryGetValue(ShotName, out PlayerProperty currentShot);
+                if (currentShot == null || string.IsNullOrWhiteSpace(currentShot.Value)) return;
 
                 _session.CurrentPlayer.SetProperty(ShotName, new PlayerProperty(string.Empty));
                 await _session.SaveCurrentPlayerDataAsync();
@@ -521,6 +524,20 @@ namespace Network
             _session.CurrentPlayer.SetProperty(ReadyName, _notReady);
             await _session.SaveCurrentPlayerDataAsync();
             LoadGame();
+        }
+
+        // CLIENT
+        public async Task LeaveSessionAsync()
+        {
+            try
+            {
+                if (_session != null)
+                    await _session.LeaveAsync();
+            }
+            catch (Exception e)
+            {
+                Debug.LogException(e);
+            }
         }
 
         // CLIENT
@@ -856,7 +873,14 @@ namespace Network
                     PlayerPrefs.Save();
                 }
 
-                // 
+                // Only save if the property isn't already set to this name
+                _session.CurrentPlayer.Properties.TryGetValue(PlayerNameKey, out PlayerProperty existingName);
+                if (existingName?.Value == playerName)
+                {
+                    Debug.Log($"Player name already set to: {playerName}");
+                    return;
+                }
+
                 _session.CurrentPlayer.SetProperty(PlayerNameKey, new PlayerProperty(playerName));
                 await _session.SaveCurrentPlayerDataAsync();
 
