@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
@@ -45,13 +45,12 @@ namespace Network
         private const string ReadyName = "ready";
         private const string StateName = "state";
         private const string ShipsName = "ships";
-        private const string ModeName = "mode";
         private const string TurnName = "turn";
         private const string ShotName = "shot";
         private const string ResultName = "result";
+        private const string PlayerNameKey = "playerName";
         //explosion on initial hit
         [SerializeField] private GameObject explosion;
-
         // NEW:
         // prevents duplicate client-side visual application
         private string _lastVisualShot;
@@ -69,6 +68,8 @@ namespace Network
         // used in lobby and placing
         private readonly PlayerProperty _notReady = new("false");
         private readonly PlayerProperty _ready = new("true");
+
+
 
         // // Session properties
         // states -
@@ -101,20 +102,13 @@ namespace Network
             DontDestroyOnLoad(gameObject);
         }
 
-        private async void Start()
+        private void Start()
         {
             try
             {
-                // connect to unity services
-                await UnityServices.InitializeAsync();
-                await AuthenticationService.Instance.SignInAnonymouslyAsync();
 
-                // session events
                 MultiplayerService.Instance.SessionAdded += OnSessionAdded;
                 MultiplayerService.Instance.SessionRemoved += OnSessionRemoved;
-
-                // debug
-                Debug.Log($"Sign in anonymously succeeded! PlayerID: {AuthenticationService.Instance.PlayerId}");
             }
             catch (Exception e)
             {
@@ -148,6 +142,11 @@ namespace Network
         {
             try
             {
+                await EnsurePlayerNameAsync();
+
+                // optional safety so the player-name property is saved before other actions
+                await Task.Delay(50);
+
                 if (!session.IsHost)
                 {
                     await SendReadyAsync(false);
@@ -289,6 +288,10 @@ namespace Network
             try
             {
                 if (_session == null) return;
+
+                // Only save if the shot property is actually set to something
+                _session.CurrentPlayer.Properties.TryGetValue(ShotName, out PlayerProperty currentShot);
+                if (currentShot == null || string.IsNullOrWhiteSpace(currentShot.Value)) return;
 
                 _session.CurrentPlayer.SetProperty(ShotName, new PlayerProperty(string.Empty));
                 await _session.SaveCurrentPlayerDataAsync();
@@ -523,6 +526,20 @@ namespace Network
             _session.CurrentPlayer.SetProperty(ReadyName, _notReady);
             await _session.SaveCurrentPlayerDataAsync();
             LoadGame();
+        }
+
+        // CLIENT
+        public async Task LeaveSessionAsync()
+        {
+            try
+            {
+                if (_session != null)
+                    await _session.LeaveAsync();
+            }
+            catch (Exception e)
+            {
+                Debug.LogException(e);
+            }
         }
 
         // CLIENT
@@ -843,5 +860,48 @@ namespace Network
                 Debug.LogException(e);
             }
         }
+
+        private async Task EnsurePlayerNameAsync()
+        {
+            try
+            {
+                string playerName = PlayerPrefs.GetString("PlayerName", "").Trim();
+
+                if (string.IsNullOrEmpty(playerName))
+                {
+                    string playerId = AuthenticationService.Instance.PlayerId;
+
+                    string suffix = (!string.IsNullOrEmpty(playerId) && playerId.Length >= 4)
+                        ? playerId.Substring(playerId.Length - 4)
+                        : UnityEngine.Random.Range(1000, 9999).ToString();
+
+                    playerName = $"Player_{suffix}";
+
+                    PlayerPrefs.SetString("PlayerName", playerName);
+                    PlayerPrefs.Save();
+                }
+
+                // Only save if the property isn't already set to this name
+                _session.CurrentPlayer.Properties.TryGetValue(PlayerNameKey, out PlayerProperty existingName);
+                if (existingName?.Value == playerName)
+                {
+                    Debug.Log($"Player name already set to: {playerName}");
+                    return;
+                }
+
+                _session.CurrentPlayer.SetProperty(PlayerNameKey, new PlayerProperty(playerName));
+                await _session.SaveCurrentPlayerDataAsync();
+
+                Debug.Log($"Player name set to: {playerName}");
+            }
+            catch (Exception e)
+            {
+                Debug.LogException(e);
+            }
+        }
+
+
+
+
     }
 }
