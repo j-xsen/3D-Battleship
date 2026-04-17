@@ -39,9 +39,11 @@ public class SpaceBuilder : MonoBehaviour
 
     //grid data for combat 
     //ship locations 
-    private ShipRecord[,,] _shipGrid;
+    private ShipRecord[,,] _myShips;
+    private ShipRecord[,,] _theirShips;
     //cell shot grid 
-    private bool[,,] _attackedCells;
+    private bool[,,] _myAttacked;
+    private bool[,,] _theirAttacked;
 
     private InputAction _selectUp;
     private InputAction _selectDown;
@@ -116,8 +118,10 @@ public class SpaceBuilder : MonoBehaviour
         // make an array of renderers so we don't keep calling GetComponent
         _renderers = new Renderer[sizeWidth, sizeHeight, sizeDepth];
         // attacking data 
-        _shipGrid = new ShipRecord[sizeWidth, sizeHeight, sizeDepth];
-        _attackedCells = new bool[sizeWidth, sizeHeight, sizeDepth];
+        _myShips = new ShipRecord[sizeWidth, sizeHeight, sizeDepth];
+        _theirShips = new ShipRecord[sizeWidth, sizeHeight, sizeDepth];
+        _myAttacked = new bool[sizeWidth, sizeHeight, sizeDepth];
+        _theirAttacked = new bool[sizeWidth, sizeHeight, sizeDepth];
 
         _cellVisualStates = new CellVisualState[sizeWidth, sizeHeight, sizeDepth];
 
@@ -298,8 +302,8 @@ public class SpaceBuilder : MonoBehaviour
         ShipRecord record = new ShipRecord();
         record.shipType = shipType;
         record.length = length;
-        record.occupiedCells = new List<Vector3Int>(occupiedCells);
-        record.hitCells = new HashSet<Vector3Int>();
+        record.OccupiedCells = new List<Vector3Int>(occupiedCells);
+        record.HitCells = new List<Vector3Int>();
 
         foreach (Vector3Int cell in occupiedCells)
         {
@@ -312,7 +316,7 @@ public class SpaceBuilder : MonoBehaviour
                 return;
             }
 
-            if (_shipGrid[cell.x, cell.y, cell.z] != null)
+            if (_myShips[cell.x, cell.y, cell.z] != null)
             {
                 Debug.LogError($"Cell already occupied: {cell}");
                 return;
@@ -320,7 +324,7 @@ public class SpaceBuilder : MonoBehaviour
             /////
             ///
 
-            _shipGrid[cell.x, cell.y, cell.z] = record;// ship assignment 
+            _myShips[cell.x, cell.y, cell.z] = record;// ship assignment 
 
             Debug.Log($"Stored ship in grid cell {cell}");
 
@@ -330,15 +334,15 @@ public class SpaceBuilder : MonoBehaviour
 
     public ShipRecord GetShipAtCell(Vector3Int cell)//for multiplayer 
     {
-        return _shipGrid[cell.x, cell.y, cell.z];
+        return _myShips[cell.x, cell.y, cell.z];
     }
 
 
     public void DebugCell(Vector3Int cell)
     {
-    Debug.Log(_shipGrid[cell.x, cell.y, cell.z] == null
+    Debug.Log(_myShips[cell.x, cell.y, cell.z] == null
         ? $"Cell {cell} is empty"
-        : $"Cell {cell} contains ship type {_shipGrid[cell.x, cell.y, cell.z].shipType}");
+        : $"Cell {cell} contains ship type {_myShips[cell.x, cell.y, cell.z].shipType}");
     }
 
 
@@ -349,44 +353,7 @@ public class SpaceBuilder : MonoBehaviour
                cell.y >= 0 && cell.y < sizeHeight &&
                cell.z >= 0 && cell.z < sizeDepth;
     }
-
-
-    public AttackResult RegisterAttack(Vector3Int cell)
-    {
-        if (!IsInBounds(cell))
-        {
-            Debug.LogError($"Attack out of bounds at {cell}");
-            return AttackResult.Miss;
-        }
-
-        if (_attackedCells[cell.x, cell.y, cell.z])
-        {
-            Debug.Log($"{cell} already attacked");
-            return AttackResult.AlreadyAttacked;
-        }
-
-        _attackedCells[cell.x, cell.y, cell.z] = true;
-
-        ShipRecord ship = _shipGrid[cell.x, cell.y, cell.z];
-
-        if (ship == null)
-        {
-            Debug.Log($" Miss at {cell}");
-            return AttackResult.Miss;
-        }
-
-        // definite hit
-        ship.hitCells.Add(cell);
-        Debug.Log($" Hit at {cell} (ship type {ship.shipType})");
-
-        if (ship.hitCells.Count >= ship.length)
-        {
-            Debug.Log($" Ship DESTROYED at {cell}");
-            return AttackResult.Destroyed;
-        }
-
-        return AttackResult.Hit;
-    }
+    
 
     public void SetCursorVisible(bool visible)
     {
@@ -452,6 +419,31 @@ public class SpaceBuilder : MonoBehaviour
         ApplyCellVisual(cell.x, cell.y, cell.z, false);
 
         Debug.Log($"VISUAL: Hit at {cell}");
+    }
+
+    public void ClearBoard()
+    {
+        for (int x = 0; x < sizeWidth; x++)
+        for (int y = 0; y < sizeHeight; y++)
+        for (int z = 0; z < sizeDepth; z++)
+            _cellVisualStates[x, y, z] = CellVisualState.Normal;
+
+        foreach (Renderer renderer in _renderers)
+            renderer.material = defaultMat;
+    }
+
+    public void VisualizeCell(Vector3Int cell, AttackResult status)
+    {
+        switch (status)
+        {
+            case AttackResult.Hit:
+            case AttackResult.Destroyed:
+                MarkHit(cell);
+                break;
+            case AttackResult.Miss:
+                MarkMiss(cell);
+                break;
+        }
     }
 
     private void ApplyCellVisual(int x, int y, int z, bool selected)

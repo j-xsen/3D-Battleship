@@ -13,7 +13,7 @@ public class HoverMouseControls : MonoBehaviour, IPointerEnterHandler, IPointerC
     }
     public void OnPointerEnter(PointerEventData eventData)
     {
-        Debug.Log("Mouse entered: " + gameObject.transform.position);
+        // Debug.Log("Mouse entered: " + gameObject.transform.position);
         if (gameObject.layer != 3)
         {
             HoverActions.current.OnUpdatePosition(this.gameObject);
@@ -37,9 +37,10 @@ public class HoverMouseControls : MonoBehaviour, IPointerEnterHandler, IPointerC
         {
             HoverActions.current.OnClicked();
         }
-        else if (HoverActions.current.currentMode == HoverActions.InputMode.Combat) //combat shooting click 
+        else if (HoverActions.current.currentMode == HoverActions.InputMode.Combat) //combat shooting click
         {
-            HoverActions.current.OnCombatClicked();
+            if (!CameraRotator.WasDragged)
+                HoverActions.current.OnCombatClicked();
         }
     }
 }

@@ -105,6 +105,7 @@ namespace Network
         {
             try
             {
+
                 MultiplayerService.Instance.SessionAdded += OnSessionAdded;
                 MultiplayerService.Instance.SessionRemoved += OnSessionRemoved;
             }
@@ -196,6 +197,8 @@ namespace Network
                     // last state is Placing
                     // current state should be At War
                     SetLastState(gameState.Value);
+                    
+                    BuildAuthoritativeBoardStates();
 
                     // NEW:
                     // clear any stale player shot when combat begins for this client
@@ -207,8 +210,9 @@ namespace Network
             // this keeps combat input cycling correctly after each shot.
             if (gameState.Value == _sAtWar.Value)
             {
-                UpdateTurnFromSession();
-
+                // process shot visuals and update board state BEFORE firing the turn event.
+                // UpdateTurnFromSession triggers the radio switch which calls ClearBoard + redraws,
+                // so the board state must already include the new shot when that redraw happens.
                 _session.Properties.TryGetValue(ShotName, out SessionProperty shotProp);
                 _session.Properties.TryGetValue(ResultName, out SessionProperty resultProp);
 
@@ -228,6 +232,20 @@ namespace Network
                         {
                             Debug.Log($"CLIENT: Shot result at {cell} = {result}");
                             ApplyShotVisual(cell, result);
+
+                            // record attack into local board state so ShowTheirShips can re-draw
+                            // after a ClearBoard (e.g. radio button switch).
+                            // host already does this via RegisterAttack in OnPlayerPropertiesChanged.
+                            if (!_session.IsHost)
+                            {
+                                _session.Properties.TryGetValue(TurnName, out SessionProperty turnNow);
+                                // turn is already flipped to next player;
+                                // if next=1, player 2 just shot -> player 1's board was attacked
+                                CombatBoardState attackedBoard = (turnNow?.Value == _tOne.Value)
+                                    ? _playerOneBoardState
+                                    : _playerTwoBoardState;
+                                attackedBoard?.RecordAttackResult(cell, result);
+                            }
                         }
 
                         // NEW:
@@ -240,6 +258,10 @@ namespace Network
                         }
                     }
                 }
+
+                // fire turn event after board state is updated so the radio-switch redraw
+                // already has the latest shot data.
+                UpdateTurnFromSession();
             }
         }
 
@@ -335,6 +357,20 @@ namespace Network
             if (turnValue == _tOne.Value) return GetPlayerOne();
             if (turnValue == _tTwo.Value) return GetPlayerTwo();
             return null;
+        }
+
+        public CombatBoardState GetMyBoardState()
+        {
+            return _session.IsHost ? _playerOneBoardState : _playerTwoBoardState;
+        }
+
+        public CombatBoardState GetTheirBoardState()
+        {
+            if (_playerOneBoardState == null || _playerTwoBoardState == null)
+            {
+                Debug.LogError("Unable to find Their Board State");
+            }
+            return _session.IsHost ? _playerTwoBoardState : _playerOneBoardState;
         }
 
         // returns the authoritative board state that should receive the attack.
@@ -574,7 +610,7 @@ namespace Network
             foreach (IReadOnlyPlayer p in _session.Players)
             {
                 p.Properties.TryGetValue(ReadyName, out PlayerProperty pVal);
-                Debug.Log($"Player {p.Id}: ready={pVal?.Value}");
+                // Debug.Log($"Player {p.Id}: ready={pVal?.Value}");
                 if (pVal?.Value == "true") continue;
                 return false;
             }

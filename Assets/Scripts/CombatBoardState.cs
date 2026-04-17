@@ -1,6 +1,8 @@
+using System;
 using UnityEngine;
 
 using System.Collections.Generic;
+using System.Linq;
 
 
 public class CombatBoardState
@@ -10,8 +12,10 @@ public class CombatBoardState
     private readonly int _sizeDepth;
 
     // authoritative host-side combat data
-    private readonly ShipRecord[,,] _shipGrid;
-    private readonly bool[,,] _attackedCells;
+    // private readonly ShipRecord[,,] _shipGrid;
+    // private readonly bool[,,] _attackedCells;
+    private List<ShipRecord> _ships;
+    private List<string> _attacked;
 
     public CombatBoardState(int sizeWidth, int sizeHeight, int sizeDepth)
     {
@@ -19,22 +23,21 @@ public class CombatBoardState
         _sizeHeight = sizeHeight;
         _sizeDepth = sizeDepth;
 
-        _shipGrid = new ShipRecord[sizeWidth, sizeHeight, sizeDepth];
-        _attackedCells = new bool[sizeWidth, sizeHeight, sizeDepth];
+        // _shipGrid = new ShipRecord[sizeWidth, sizeHeight, sizeDepth];
+        // _attackedCells = new bool[sizeWidth, sizeHeight, sizeDepth];
+        _ships = new List<ShipRecord>();
+        _attacked = new List<string>();
     }
 
     public void RegisterShipData(int shipType, int length, List<Vector3Int> occupiedCells)
     {
         // create one shared ShipRecord for the whole ship
-        ShipRecord record = new ShipRecord();
-        record.shipType = shipType;
-        record.length = length;
-        record.occupiedCells = new List<Vector3Int>(occupiedCells);
-
-        // IMPORTANT:
-        // your ShipRecord.hitCells appears to be a HashSet<Vector3Int>,
-        // not a List<Vector3Int>
-        record.hitCells = new HashSet<Vector3Int>();
+        ShipRecord record = new ShipRecord
+        {
+            shipType = shipType,
+            length = length,
+            OccupiedCells = new List<Vector3Int>(occupiedCells),
+        };
 
         foreach (Vector3Int cell in occupiedCells)
         {
@@ -44,24 +47,33 @@ public class CombatBoardState
                 return;
             }
 
-            if (_shipGrid[cell.x, cell.y, cell.z] != null)
+            foreach (ShipRecord ship in _ships)
             {
+                if (!ship.OccupiesCell(cell)) continue;
+                
                 Debug.LogError($"CombatBoardState: cell already occupied: {cell}");
                 return;
             }
 
             // every occupied cell points to the same ship record
-            _shipGrid[cell.x, cell.y, cell.z] = record;
+            // _shipGrid[cell.x, cell.y, cell.z] = record;
             Debug.Log($"CombatBoardState: stored ship type {shipType} in cell {cell}");
         }
 
+        _ships.Add(record);
         Debug.Log($"CombatBoardState: registered ship type {shipType} with {occupiedCells.Count} cells");
     }
 
     public ShipRecord GetShipAtCell(Vector3Int cell)
     {
         if (!IsInBounds(cell)) return null;
-        return _shipGrid[cell.x, cell.y, cell.z];
+
+        foreach (ShipRecord ship in _ships)
+        {
+            if (ship.OccupiesCell(cell)) return ship;
+        }
+
+        return null;
     }
 
     public AttackResult RegisterAttack(Vector3Int cell)
@@ -73,72 +85,77 @@ public class CombatBoardState
         }
 
         // already attacked
-        if (_attackedCells[cell.x, cell.y, cell.z])
+        foreach (string attackedCell in _attacked)
         {
-            Debug.Log($"{cell} already attacked");
-            return AttackResult.Miss;
+            Vector3Int stringToVector = VectorFromString(attackedCell);
+            
+            if (stringToVector != cell) continue;
+            Debug.LogError("Already attacked this cell!");
+            return AttackResult.AlreadyAttacked;
         }
 
-        _attackedCells[cell.x, cell.y, cell.z] = true;
+        ShipRecord ship = GetShipAtCell(cell);
 
-        ShipRecord ship = _shipGrid[cell.x, cell.y, cell.z];
-
-        // miss
+        string vectorToString = $"{cell.x},{cell.y},{cell.z};";
+        
         if (ship == null)
         {
-            Debug.Log($"? Miss at {cell}");
+            vectorToString += AttackResult.Miss;
+            _attacked.Add(vectorToString);
             return AttackResult.Miss;
         }
-
+        
         // hit
-        ship.hitCells.Add(cell);
+        ship.HitCells.Add(cell);
         Debug.Log($"? Hit at {cell} (ship type {ship.shipType})");
-
-        // destroyed
-        if (ship.hitCells.Count >= ship.length)
+        
+        if (ship.Health() == 0)
         {
-            Debug.Log($"?? Ship DESTROYED! Type {ship.shipType}");
+            vectorToString += AttackResult.Destroyed;
+            _attacked.Add(vectorToString);
             return AttackResult.Destroyed;
         }
 
+        vectorToString += AttackResult.Hit;
+        
+        _attacked.Add(vectorToString);
+
         return AttackResult.Hit;
+    }
+
+    public Vector3Int VectorFromString(string cell)
+    {
+        string[] presplit = cell.Split(";");
+        string[] split = presplit[0].Split(",");
+        return new Vector3Int(Convert.ToInt32(split[0]),
+            Convert.ToInt32(split[1]), Convert.ToInt32(split[2]));
+    }
+
+    public AttackResult ResultFromString(string cell)
+    {
+        string[] presplit = cell.Split(";");
+        if (Enum.TryParse(presplit[1], out AttackResult result)) return result;
+        return AttackResult.INVALID;
     }
 
     public bool WasCellAttacked(Vector3Int cell)
     {
         if (!IsInBounds(cell)) return false;
-        return _attackedCells[cell.x, cell.y, cell.z];
+
+        foreach (string attacked in _attacked)
+        {
+            Vector3Int fromString = VectorFromString(attacked);
+            if (cell == fromString) return true;
+        }
+
+        return false;
     }
 
     public bool AllShipsDestroyed()
     {
-        HashSet<ShipRecord> seenShips = new HashSet<ShipRecord>();
-
-        for (int x = 0; x < _sizeWidth; x++)
+        foreach (ShipRecord ship in _ships)
         {
-            for (int y = 0; y < _sizeHeight; y++)
-            {
-                for (int z = 0; z < _sizeDepth; z++)
-                {
-                    ShipRecord ship = _shipGrid[x, y, z];
-                    if (ship == null) continue;
-
-                    seenShips.Add(ship);
-                }
-            }
-        }
-
-        if (seenShips.Count == 0)
-        {
-            return false;
-        }
-
-        foreach (ShipRecord ship in seenShips)
-        {
-            if (ship.hitCells.Count < ship.length)
-            {
-                return false;
-            }
+            if (ship.HitCells.Count < ship.length) return false;
         }
 
         return true;
@@ -149,6 +166,23 @@ public class CombatBoardState
         return cell.x >= 0 && cell.x < _sizeWidth &&
                cell.y >= 0 && cell.y < _sizeHeight &&
                cell.z >= 0 && cell.z < _sizeDepth;
+    }
+
+    public void RecordAttackResult(Vector3Int cell, AttackResult result)
+    {
+        string entry = $"{cell.x},{cell.y},{cell.z};{result}";
+        if (!_attacked.Contains(entry))
+            _attacked.Add(entry);
+    }
+
+    public List<string> GetAttackedCells()
+    {
+        return _attacked;
+    }
+
+    public List<ShipRecord> GetShips()
+    {
+        return _ships;
     }
 }
 

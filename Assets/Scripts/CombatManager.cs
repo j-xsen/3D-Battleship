@@ -1,3 +1,4 @@
+using System;
 using System.Threading.Tasks;
 using Network;
 using UnityEngine;
@@ -11,6 +12,10 @@ public class CombatManager : MonoBehaviour
     private SessionManager network;
     private bool isMyTurn;
     private bool shotQueued;
+    
+    // inputs
+    private InputAction _placeShip;
+    private Action<InputAction.CallbackContext> _onPlaceShip;
 
     private void Awake()
     {
@@ -26,6 +31,10 @@ public class CombatManager : MonoBehaviour
         network.OnStateChanged += OnStateChange;
 
         enabled = false;
+        
+        _placeShip = InputSystem.actions.FindAction("SpaceField/ShipPlace");
+        _onPlaceShip = _ => SendShot();
+        if (_placeShip != null) _placeShip.performed += _onPlaceShip;
     }
 
     private void OnDestroy()
@@ -35,6 +44,11 @@ public class CombatManager : MonoBehaviour
             network.OnMyTurn -= OnMyTurn;
             network.OnTheirTurn -= OnTheirTurn;
             network.OnStateChanged -= OnStateChange;
+        }
+
+        if (HoverActions.current)
+        {
+            HoverActions.current.CombatClicked -= SendShot;
         }
     }
 
@@ -61,11 +75,17 @@ public class CombatManager : MonoBehaviour
             if (HoverActions.current)
             {
                 HoverActions.current.currentMode = HoverActions.InputMode.Combat;
+                HoverActions.current.CombatClicked += SendShot;
             }
         }
         else
         {
             enabled = false;
+
+            if (HoverActions.current)
+            {
+                HoverActions.current.CombatClicked -= SendShot;
+            }
         }
     }
 

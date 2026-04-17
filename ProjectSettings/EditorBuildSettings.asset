@@ -17,7 +17,7 @@ EditorBuildSettings:
   - enabled: 1
     path: Assets/Scenes/GamePlay.unity
     guid: 68e435bad3d4f264b92e371e54141c2e
-  - enabled: 1
+  - enabled: 0
     path: Assets/Scenes/grid_screen.unity
     guid: 4d9afb3761783804198d4a3d6701a71e
   - enabled: 1
