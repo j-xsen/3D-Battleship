@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
@@ -49,7 +49,7 @@ namespace Network
         private const string TurnName = "turn";
         private const string ShotName = "shot";
         private const string ResultName = "result";
-
+        private const string PlayerNameKey = "playerName";
         // NEW:
         // prevents duplicate client-side visual application
         private string _lastVisualShot;
@@ -67,6 +67,8 @@ namespace Network
         // used in lobby and placing
         private readonly PlayerProperty _notReady = new("false");
         private readonly PlayerProperty _ready = new("true");
+
+
 
         // // Session properties
         // states -
@@ -103,22 +105,9 @@ namespace Network
         {
             try
             {
-                // connect to unity services
-                await UnityServices.InitializeAsync();
-                await AuthenticationService.Instance.SignInAnonymouslyAsync();
 
-                // WithPlayerName() requires a name to be set; anonymous sign-in doesn't set one
-                if (string.IsNullOrEmpty(AuthenticationService.Instance.PlayerName))
-                {
-                    await AuthenticationService.Instance.UpdatePlayerNameAsync("Player" + UnityEngine.Random.Range(1000, 9999));
-                }
-
-                // session events
                 MultiplayerService.Instance.SessionAdded += OnSessionAdded;
                 MultiplayerService.Instance.SessionRemoved += OnSessionRemoved;
-
-                // debug
-                Debug.Log($"Sign in anonymously succeeded! PlayerID: {AuthenticationService.Instance.PlayerId}");
             }
             catch (Exception e)
             {
@@ -152,6 +141,11 @@ namespace Network
         {
             try
             {
+                await EnsurePlayerNameAsync();
+
+                // optional safety so the player-name property is saved before other actions
+                await Task.Delay(50);
+
                 if (!session.IsHost)
                 {
                     await SendReadyAsync(false);
@@ -841,5 +835,41 @@ namespace Network
                 Debug.LogException(e);
             }
         }
+
+        private async Task EnsurePlayerNameAsync()
+        {
+            try
+            {
+                string playerName = PlayerPrefs.GetString("PlayerName", "").Trim();
+
+                if (string.IsNullOrEmpty(playerName))
+                {
+                    string playerId = AuthenticationService.Instance.PlayerId;
+
+                    string suffix = (!string.IsNullOrEmpty(playerId) && playerId.Length >= 4)
+                        ? playerId.Substring(playerId.Length - 4)
+                        : UnityEngine.Random.Range(1000, 9999).ToString();
+
+                    playerName = $"Player_{suffix}";
+
+                    PlayerPrefs.SetString("PlayerName", playerName);
+                    PlayerPrefs.Save();
+                }
+
+                // 
+                _session.CurrentPlayer.SetProperty(PlayerNameKey, new PlayerProperty(playerName));
+                await _session.SaveCurrentPlayerDataAsync();
+
+                Debug.Log($"Player name set to: {playerName}");
+            }
+            catch (Exception e)
+            {
+                Debug.LogException(e);
+            }
+        }
+
+
+
+
     }
 }

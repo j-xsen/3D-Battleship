@@ -15,7 +15,7 @@ MonoBehaviour:
   maxPlayers: 2
   sessionName: battleship-session
   sessionType: battleship
-  usePlayerName: 1
+  usePlayerName: 0
   createNetworkSession: 1
   networkType: 1
   ipAddress: 127.0.0.1
