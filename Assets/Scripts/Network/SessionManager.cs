@@ -107,6 +107,12 @@ namespace Network
                 await UnityServices.InitializeAsync();
                 await AuthenticationService.Instance.SignInAnonymouslyAsync();
 
+                // WithPlayerName() requires a name to be set; anonymous sign-in doesn't set one
+                if (string.IsNullOrEmpty(AuthenticationService.Instance.PlayerName))
+                {
+                    await AuthenticationService.Instance.UpdatePlayerNameAsync("Player" + UnityEngine.Random.Range(1000, 9999));
+                }
+
                 // session events
                 MultiplayerService.Instance.SessionAdded += OnSessionAdded;
                 MultiplayerService.Instance.SessionRemoved += OnSessionRemoved;
