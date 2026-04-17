@@ -17,6 +17,7 @@ public class CombatBoardState
     private List<ShipRecord> _ships;
     private List<string> _attacked;
 
+
     public CombatBoardState(int sizeWidth, int sizeHeight, int sizeDepth)
     {
         _sizeWidth = sizeWidth;

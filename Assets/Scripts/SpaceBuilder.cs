@@ -35,6 +35,7 @@ public class SpaceBuilder : MonoBehaviour
 
     [SerializeField] private Material missMat;
     [SerializeField] private Material hitMat;
+    [SerializeField] private Material destroyMat;
 
 
     //grid data for combat 
@@ -445,7 +446,7 @@ public class SpaceBuilder : MonoBehaviour
                 break;
         }
     }
-
+    
     private void ApplyCellVisual(int x, int y, int z, bool selected)
     {
         Renderer rend = _renderers[x, y, z];

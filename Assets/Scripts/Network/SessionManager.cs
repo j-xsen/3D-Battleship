@@ -49,6 +49,8 @@ namespace Network
         private const string TurnName = "turn";
         private const string ShotName = "shot";
         private const string ResultName = "result";
+        //explosion on initial hit
+        [SerializeField] private GameObject explosion;
 
         // NEW:
         // prevents duplicate client-side visual application
@@ -618,6 +620,11 @@ namespace Network
             return true;
         }
 
+        private void ApplyExplode(Vector3 place)
+        {
+            GameObject baby = Instantiate(explosion, place, Quaternion.Euler(Vector3.zero));
+            Destroy(baby, 2f);
+        }
         // HOST
         private void OnPlayerPropertiesChanged()
         {
@@ -704,6 +711,7 @@ namespace Network
                             break;
 
                         case AttackResult.Hit:
+                            ApplyExplode(shotCell);
                             Debug.Log($"Host: Hit at {shotCell}");
                             break;
 
