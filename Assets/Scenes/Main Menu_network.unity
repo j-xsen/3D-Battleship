@@ -5878,7 +5878,7 @@ MonoBehaviour:
   m_faceColor:
     serializedVersion: 2
     rgba: 4294967295
-  m_fontSize: 42.85
+  m_fontSize: 40.3
   m_fontSizeBase: 40
   m_fontWeight: 400
   m_enableAutoSizing: 1
@@ -6318,7 +6318,7 @@ MonoBehaviour:
   m_faceColor:
     serializedVersion: 2
     rgba: 4294967295
-  m_fontSize: 42.8
+  m_fontSize: 40.25
   m_fontSizeBase: 40
   m_fontWeight: 400
   m_enableAutoSizing: 1
@@ -6569,7 +6569,7 @@ MonoBehaviour:
   m_faceColor:
     serializedVersion: 2
     rgba: 4294967295
-  m_fontSize: 102.5
+  m_fontSize: 77.2
   m_fontSizeBase: 100
   m_fontWeight: 400
   m_enableAutoSizing: 1
@@ -11856,6 +11856,7 @@ MonoBehaviour:
   boardWidth: 10
   boardHeight: 10
   boardDepth: 10
+  explosion: {fileID: 2907639918448838641, guid: 903e7b436beb69a4b81cf80d60fc2ccd, type: 3}
 --- !u!1 &1194987530
 GameObject:
   m_ObjectHideFlags: 0

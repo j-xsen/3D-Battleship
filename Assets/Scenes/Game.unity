@@ -10461,6 +10461,9 @@ MonoBehaviour:
   showCursor: 0
   boardOffset: {x: 0, y: 0, z: 0}
   isActiveBoard: 1
+  missMat: {fileID: 2100000, guid: 76771cfffb05556458454219e3cd5fd9, type: 2}
+  hitMat: {fileID: 2100000, guid: 148fbb8008a28d64ca76c922956d193e, type: 2}
+  explosion: {fileID: 2907639918448838641, guid: 903e7b436beb69a4b81cf80d60fc2ccd, type: 3}
 --- !u!4 &412167432
 Transform:
   m_ObjectHideFlags: 0
@@ -10639,7 +10642,7 @@ MonoBehaviour:
   m_faceColor:
     serializedVersion: 2
     rgba: 4294967295
-  m_fontSize: 26
+  m_fontSize: 27.5
   m_fontSizeBase: 24
   m_fontWeight: 400
   m_enableAutoSizing: 1
@@ -11060,7 +11063,7 @@ MonoBehaviour:
   m_faceColor:
     serializedVersion: 2
     rgba: 4294967295
-  m_fontSize: 25.6
+  m_fontSize: 26.95
   m_fontSizeBase: 24
   m_fontWeight: 400
   m_enableAutoSizing: 1
