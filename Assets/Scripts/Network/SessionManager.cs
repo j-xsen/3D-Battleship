@@ -101,7 +101,7 @@ namespace Network
             DontDestroyOnLoad(gameObject);
         }
 
-        private async void Start()
+        private void Start()
         {
             try
             {
@@ -287,6 +287,10 @@ namespace Network
             try
             {
                 if (_session == null) return;
+
+                // Only save if the shot property is actually set to something
+                _session.CurrentPlayer.Properties.TryGetValue(ShotName, out PlayerProperty currentShot);
+                if (currentShot == null || string.IsNullOrWhiteSpace(currentShot.Value)) return;
 
                 _session.CurrentPlayer.SetProperty(ShotName, new PlayerProperty(string.Empty));
                 await _session.SaveCurrentPlayerDataAsync();
@@ -856,7 +860,14 @@ namespace Network
                     PlayerPrefs.Save();
                 }
 
-                // 
+                // Only save if the property isn't already set to this name
+                _session.CurrentPlayer.Properties.TryGetValue(PlayerNameKey, out PlayerProperty existingName);
+                if (existingName?.Value == playerName)
+                {
+                    Debug.Log($"Player name already set to: {playerName}");
+                    return;
+                }
+
                 _session.CurrentPlayer.SetProperty(PlayerNameKey, new PlayerProperty(playerName));
                 await _session.SaveCurrentPlayerDataAsync();
 
