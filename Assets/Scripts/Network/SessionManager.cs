@@ -105,17 +105,8 @@ namespace Network
         {
             try
             {
-                // connect to unity services
-                await UnityServices.InitializeAsync();
-                await AuthenticationService.Instance.SignInAnonymouslyAsync();
-                
-
-                // session events
                 MultiplayerService.Instance.SessionAdded += OnSessionAdded;
                 MultiplayerService.Instance.SessionRemoved += OnSessionRemoved;
-
-                // debug
-                Debug.Log($"Sign in anonymously succeeded! PlayerID: {AuthenticationService.Instance.PlayerId}");
             }
             catch (Exception e)
             {
