@@ -45,7 +45,6 @@ namespace Network
         private const string ReadyName = "ready";
         private const string StateName = "state";
         private const string ShipsName = "ships";
-        private const string ModeName = "mode";
         private const string TurnName = "turn";
         private const string ShotName = "shot";
         private const string ResultName = "result";
@@ -525,6 +524,20 @@ namespace Network
             _session.CurrentPlayer.SetProperty(ReadyName, _notReady);
             await _session.SaveCurrentPlayerDataAsync();
             LoadGame();
+        }
+
+        // CLIENT
+        public async Task LeaveSessionAsync()
+        {
+            try
+            {
+                if (_session != null)
+                    await _session.LeaveAsync();
+            }
+            catch (Exception e)
+            {
+                Debug.LogException(e);
+            }
         }
 
         // CLIENT

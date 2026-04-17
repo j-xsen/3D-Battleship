@@ -1,0 +1,6 @@
+<ui:UXML xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:ui="UnityEngine.UIElements" xmlns:uie="UnityEditor.UIElements" noNamespaceSchemaLocation="../../UIElementsSchema/UIElements.xsd" editor-extension-mode="False">
+    <ui:VisualElement style="flex-grow: 1; right: 0; left: 0; top: 0; bottom: 0; justify-content: center;">
+        <ui:Label text="Pending" name="VictoryStatus" style="font-size: 53px; color: rgb(217, 217, 217); -unity-font-definition: resource(&quot;Fonts &amp; Materials/Ethnocentric-Regular&quot;); -unity-text-align: upper-center; align-self: center; align-items: center; justify-content: flex-start;"/>
+        <ui:Button text="Back to Main Menu" style="-unity-font-definition: resource(&quot;Fonts &amp; Materials/Ethnocentric-Regular&quot;);"/>
+    </ui:VisualElement>
+</ui:UXML>
